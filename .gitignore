@@ -1,1 +1,6 @@
+.DS_Store
+.vscode
+
 build
+
+kru2d.conf

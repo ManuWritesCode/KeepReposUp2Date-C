@@ -60,7 +60,43 @@ void parse_and_print_repos(const char *json) {
     json_object_put(parsed_json);
 }
 
+void load_env(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Failed to open .env file");
+        exit(EXIT_FAILURE);
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        // Remove newline character
+        line[strcspn(line, "\n")] = 0;
+
+        // Split the line into key and value
+        char *key = strtok(line, "=");
+        char *value = strtok(NULL, "=");
+
+        if (key && value) {
+            setenv(key, value, 1);
+        }
+    }
+
+    fclose(file);
+}
+
 int main(void) {
+    load_env(".env");
+
+    const char *hostname_pc1 = getenv("HOSTNAME_PC1");
+    const char *projects_dir_pc1 = getenv("PROJECTS_DIR_PC1");
+
+    if (hostname_pc1 && projects_dir_pc1) {
+        printf("Hostname PC1: %s\n", hostname_pc1);
+        printf("Projects Directory PC1: %s\n", projects_dir_pc1);
+    } else {
+        fprintf(stderr, "Failed to load environment variables\n");
+    }
+
     CURL *curl;
     CURLcode res;
     struct string s;

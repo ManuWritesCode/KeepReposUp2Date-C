@@ -19,33 +19,12 @@
  *
  *************************************************************************************************************/
 
-
-#include <errno.h>
+ #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "main.h"
-#include "github.h"
 
 
-int main ( void )
-{
-    // Loads configuration file
-    load_conf( "/Users/manu/Documents/02_DEV/KeepReposUp2Date-C/kru2d.conf" );
 
-    // Gets the main development path
-    const char *dev_path = getenv( "DEV_PATH" );
 
-    // Gets the Github token
-    const char *github_token = getenv( "GITHUB_TOKEN" );
-
-    if ( dev_path && github_token ) {
-        //fprintf( stdout, "DEV_PATH=%s\n", dev_path );
-        //fprintf( stdout, "GITHUB_TOKEN=%s\n", github_token );
-    }
-    
-    // Gets the list of all the Github repositories
-
-	return EXIT_SUCCESS;
-}

@@ -44,7 +44,7 @@ Clone this repository :
 git clone https://github.com/ManuWritesCode/KeepReposUp2Date-C.git
 ```
 
-Go to KeepReposUp2Date-C folder :
+Go to _KeepReposUp2Date-C_ folder :
 
 ```bash
 cd KeepReposUp2Date-C
@@ -55,3 +55,19 @@ and compile the sources :
 ```bash
 make
 ```
+
+### Configuring
+
+For each your computers, copy _kru2d-example.conf_ to a new file called _kru2d.conf_ :
+
+```bash
+cp kru2d-example.conf kru2d.conf
+```
+
+Then, open the file you just create :
+
+```bash
+nano kru2d.conf
+```
+
+and modify it with the correct information.

@@ -19,33 +19,43 @@
  *
  *************************************************************************************************************/
 
-
-#include <errno.h>
+ #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "main.h"
-#include "github.h"
 
 
-int main ( void )
+/* Reads the configuration file to get :
+* DEV_PATH : the path where all projects are stored
+* GITHUB_TOKEN : your Github token to connect to your Github account
+*/
+void load_conf( const char *filename )
 {
-    // Loads configuration file
-    load_conf( "/Users/manu/Documents/02_DEV/KeepReposUp2Date-C/kru2d.conf" );
+    FILE *file = fopen( filename, "r" );
+    char line[256];
 
-    // Gets the main development path
-    const char *dev_path = getenv( "DEV_PATH" );
 
-    // Gets the Github token
-    const char *github_token = getenv( "GITHUB_TOKEN" );
-
-    if ( dev_path && github_token ) {
-        //fprintf( stdout, "DEV_PATH=%s\n", dev_path );
-        //fprintf( stdout, "GITHUB_TOKEN=%s\n", github_token );
+    if ( file == NULL ) {
+        perror( "Failed to open the configuration file" );
+        exit( EXIT_FAILURE );
     }
-    
-    // Gets the list of all the Github repositories
 
-	return EXIT_SUCCESS;
+    while ( fgets( line, sizeof( line ), file )) {
+        // Remove newline character
+        line[ strcspn( line, "\n" ) ] = 0;
+
+        // Split the line into key and value
+        char *key = strtok( line, "=" );
+        char *value= strtok( NULL, "=" );
+
+        if ( key && value ) {
+            setenv( key, value, 1 );
+        }
+    }
+
+    fclose( file );
 }
+
+
+

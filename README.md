@@ -56,6 +56,8 @@ and compile the sources :
 make
 ```
 
+A new directory will be created with the main executable.
+
 ### Configuring
 
 For each your computers, copy _kru2d-example.conf_ to a new file called _kru2d.conf_ :
@@ -70,4 +72,12 @@ Then, open the file you just create :
 nano kru2d.conf
 ```
 
-and modify it with the correct information.
+and modify like this :
+
+```bash
+DEV_PATH=Your/main/development/path
+GITHUB_TOKEN=Your_Github_token_to_access_your_Github_account
+```
+
+by replacing _Your/main/development/path_ with the path containing all your development projects and _Your_Github_token_to_access_your_Github_account_ by your Github token.
+If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).

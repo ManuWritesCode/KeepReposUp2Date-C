@@ -19,7 +19,7 @@
  *
  *************************************************************************************************************/
 
- #include <errno.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -27,9 +27,9 @@
 
 
 /* Reads the configuration file to get :
-* DEV_PATH : the path where all projects are stored
-* GITHUB_TOKEN : your Github token to connect to your Github account
-*/
+ * DEV_PATH : the path where all projects are stored
+ * GITHUB_TOKEN : your Github token to connect to your Github account
+ */
 void load_conf( const char *filename )
 {
     FILE *file = fopen( filename, "r" );

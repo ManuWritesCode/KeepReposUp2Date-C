@@ -35,7 +35,7 @@ brew install curl json-c
 sudo apt update
 sudo apt install curl libjson-c-dev
 ```
-
+You need too a Github token too to let this programm accessing to your Github account. If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 ### Building
 
 Clone this repository :
@@ -80,4 +80,3 @@ GITHUB_TOKEN=Your_Github_token_to_access_your_Github_account
 ```
 
 by replacing _Your/main/development/path_ with the path containing all your development projects and _Your_Github_token_to_access_your_Github_account_ by your Github token.
-If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 
 /* Reads the configuration file to get :
@@ -61,8 +62,6 @@ void load_conf( const char *filename )
 void *thread_clone_or_pull_repo( void *arg )
 {
     long num = (long) arg;
-    while (1) {
-        fprintf(stderr, "Thread #%ld\n", num);
-        sleep(1);
-    }
+    
+    fprintf(stderr, "Thread #%ld\n", num);
 }

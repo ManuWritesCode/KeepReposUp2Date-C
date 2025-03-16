@@ -35,7 +35,7 @@ int main ( void )
     const char *github_token = getenv( "GITHUB_TOKEN" );
 
    
-    if ( !dev_path && !github_token ) {
+    if ( !dev_path || !github_token ) {
         fprintf( stderr, "Please, fill the DEV_PATH or/and GITHUB_TOKEN to your kru2d.conf configuration file !\n" );
         exit( EXIT_FAILURE );
     }

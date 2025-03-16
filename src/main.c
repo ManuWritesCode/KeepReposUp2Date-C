@@ -24,7 +24,7 @@
 
 
 int main ( void )
-{
+{    
     // Loads configuration file
     load_conf( "/Users/manu/Documents/02_DEV/KeepReposUp2Date-C/kru2d.conf" );
 
@@ -35,20 +35,28 @@ int main ( void )
     const char *github_token = getenv( "GITHUB_TOKEN" );
 
    
-    if ( dev_path && github_token ) {
-        //fprintf( stdout, "DEV_PATH=%s\n", dev_path );
-        //fprintf( stdout, "GITHUB_TOKEN=%s\n", github_token );
+    if ( !dev_path && !github_token ) {
+        fprintf( stderr, "Please, fill the DEV_PATH or/and GITHUB_TOKEN to your kru2d.conf configuration file !\n" );
+        exit( EXIT_FAILURE );
     }
 
     // Gets all Github repositories
     struct repo_names repos = fetch_github_repos( github_token );
+
+    pthread_t thr[repos.count];
+
     for ( size_t i = 0; i < repos.count; i++ ) {
         // Creates a thread per Github repository
-        printf( "Repo : %s\n", repos.names[i] );
+        if (pthread_create(&thr[i], NULL, thread_clone_or_pull_repo, ( void * )i) != 0) {
+            fprintf(stderr, "Error during pthread_create()\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        //printf( "Repo : %s\n", repos.names[i] );
         free( repos.names[i] );
     }
     
     free( repos.names );
     
-    return 0;
+    pthread_exit(NULL);
 }

@@ -58,4 +58,11 @@ void load_conf( const char *filename )
 }
 
 
-
+void *thread_clone_or_pull_repo( void *arg )
+{
+    long num = (long) arg;
+    while (1) {
+        fprintf(stderr, "Thread #%ld\n", num);
+        sleep(1);
+    }
+}

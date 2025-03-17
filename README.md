@@ -33,9 +33,10 @@ brew install curl json-c
 - on Debian GNU/Linux
 ```bash
 sudo apt update
-sudo apt install curl libjson-c-dev
+sudo apt install curl libcurl4-openssl-dev libjson-c-dev
 ```
 You need too a Github token too to let this programm accessing to your Github account. If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
 ### Building
 
 Clone this repository :
@@ -56,23 +57,25 @@ and compile the sources :
 make
 ```
 
-A new directory will be created with the main executable.
+### Installing
+
+To install kru2d, 
+
+```bash
+make install
+```
+
+This will copy the configuration file to your user folder, and the binary to /opt/KeepReposUp2Date.
 
 ### Configuring
 
-For each your computers, copy _kru2d-example.conf_ to a new file called _kru2d.conf_ :
+Edit the configfuration file :
 
 ```bash
-cp kru2d-example.conf kru2d.conf
+nano ~/.config/kru2d.conf
 ```
 
-Then, open the file you just create :
-
-```bash
-nano kru2d.conf
-```
-
-and modify like this :
+and modify it like this :
 
 ```bash
 DEV_PATH=Your/main/development/path

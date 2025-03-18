@@ -25,8 +25,25 @@
 
 int main ( void )
 {    
+    const char *home = getenv( "HOME" );
+    
+    if ( home == NULL ) {
+        fprintf( stderr, "Failed to get the HOME environment variabel.\n" );
+        exit( EXIT_FAILURE );
+    }
+
+    // Constructs the complete path to the configuration file
+    size_t path_length = strlen( home ) + strlen( "/.config/KeepReposUp2Date/kru2d.conf" ) + 1;
+    char *config_path = malloc( path_length );
+    if ( config_path == NULL ) {
+        fprintf( stderr, "Failed to allocate memory for config_path.\n" );
+        exit( EXIT_FAILURE );
+    }
+    snprintf(config_path, path_length, "%s/.config/KeepReposUp2Date/kru2d.conf", home);
+
+
     // Loads configuration file
-    load_conf( "/Users/manu/Documents/02_DEV/KeepReposUp2Date-C/kru2d.conf" );
+    load_conf( config_path);
 
     // Gets the main development path
     const char *dev_path = getenv( "DEV_PATH" );

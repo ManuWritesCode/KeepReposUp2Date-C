@@ -38,7 +38,7 @@ void load_conf( const char *filename )
 
 
     if ( file == NULL ) {
-        perror( "Failed to open the configuration file" );
+        fprintf(stderr, "Failed to open the configuration file: %s\n", filename);
         exit( EXIT_FAILURE );
     }
 

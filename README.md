@@ -83,3 +83,57 @@ GITHUB_TOKEN=Your_Github_token_to_access_your_Github_account
 ```
 
 by replacing _Your/main/development/path_ with the path containing all your development projects and _Your_Github_token_to_access_your_Github_account_ by your Github token.
+
+## Run the binary automatically
+
+### On Linux
+
+To run the binary automatically at each session start, the `make install` command creates a systemd service containing :
+
+```ini
+[Unit]
+Description=Keep Repos Up To Date
+
+[Service]
+ExecStart=/opt/KeepReposUp2Date/kru2d
+Restart=always
+
+[Install]
+WantedBy=default.target
+```
+
+Then enable and start the service:
+
+```bash
+sudo systemctl enable kru2d.service
+sudo systemctl start kru2d.service
+```
+
+### On MacOS
+
+For MacOS, a launchd agent is created :
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.keepreposuptodate.kru2d</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/KeepReposUp2Date/kru2d</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+</dict>
+</plist>
+```
+
+Then load the agent:
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.keepreposuptodate.kru2d.plist
+```

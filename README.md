@@ -93,10 +93,15 @@ To run the binary automatically at each session start, the `make install` comman
 ```ini
 [Unit]
 Description=Keep Repos Up To Date
+After=default.target
 
 [Service]
 ExecStart=/opt/KeepReposUp2Date/kru2d
-Restart=always
+Environment=HOME=/home/manu
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=30s
+StartLimitBurst=3
 
 [Install]
 WantedBy=default.target

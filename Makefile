@@ -1,6 +1,9 @@
 # Which is the Operating System in use ?
 UNAME_S := $(shell uname -s)
 
+# Whici is the user HOME path ?
+USER_HOME := $(HOME)
+
 # In function of the OS, paths and options are different
 ifeq ($(UNAME_S), Darwin) # MacOS
 	CFLAGS = -I/opt/homebrew/opt/json-c/include
@@ -34,10 +37,15 @@ install: kru2d
 ifeq ($(UNAME_S), Linux)
 	@echo "[Unit]" > kru2d.service
 	@echo "Description=Keep Repos Up To Date" >> kru2d.service
+	@echo "After=default.target" >> kru2d.service
 	@echo "" >> kru2d.service
 	@echo "[Service]" >> kru2d.service
 	@echo "ExecStart=/opt/KeepReposUp2Date/kru2d" >> kru2d.service
-	@echo "Restart=always" >> kru2d.service
+	@echo "Environment=HOME=$(USER_HOME)" >> kru2d.service
+	@echo "Restart=on-failure" >> kru2d.service
+	@echo "RestartSec=5s" >> kru2d.service
+	@echo "StartLimitInterval=30s" >> kru2d.service
+	@echo "StartLimitBurst=3" >> kru2d.service
 	@echo "" >> kru2d.service
 	@echo "[Install]" >> kru2d.service
 	@echo "WantedBy=default.target" >> kru2d.service

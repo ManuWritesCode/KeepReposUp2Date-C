@@ -28,7 +28,7 @@ int main ( void )
     const char *home = getenv( "HOME" );
     
     if ( home == NULL ) {
-        fprintf( stderr, "Failed to get the HOME environment variabel.\n" );
+        fprintf( stderr, "Failed to get the HOME environment variable.\n" );
         exit( EXIT_FAILURE );
     }
 
@@ -39,11 +39,11 @@ int main ( void )
         fprintf( stderr, "Failed to allocate memory for config_path.\n" );
         exit( EXIT_FAILURE );
     }
-    snprintf(config_path, path_length, "%s/.config/KeepReposUp2Date/kru2d.conf", home);
+    snprintf( config_path, path_length, "%s/.config/KeepReposUp2Date/kru2d.conf", home );
 
 
     // Loads configuration file
-    load_conf( config_path);
+    load_conf( config_path );
 
     // Gets the main development path
     const char *dev_path = getenv( "DEV_PATH" );

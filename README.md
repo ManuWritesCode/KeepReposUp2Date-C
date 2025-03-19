@@ -33,7 +33,7 @@ brew install curl json-c
 - on Debian GNU/Linux
 ```bash
 sudo apt update
-sudo apt install curl libcurl4-openssl-dev libjson-c-dev
+sudo apt install curl libcurl4-openssl-dev libjson-c-dev libgit2-dev
 ```
 You need too a Github token too to let this programm accessing to your Github account. If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
@@ -86,7 +86,7 @@ by replacing _Your/main/development/path_ with the path containing all your deve
 
 ## Run the binary automatically
 
-### On Linux
+### On Debian GNU/Linux
 
 To run the binary automatically at each session start, the `make install` command creates a systemd service containing :
 

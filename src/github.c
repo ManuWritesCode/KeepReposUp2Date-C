@@ -175,7 +175,66 @@ int clone_repo( const char *repo_url, const char *local_path ) {
 /* Pull changes from a repository */
 int pull_repo( const char *local_path ) {
 
-    fprintf( stdout, "Pulling repository at %s\n", local_path );
+    git_repository *repo = NULL;
+    git_remote *remote = NULL;
+    git_reference *fetch_head = NULL;
+    git_annotated_commit *fetch_head_commit = NULL;
+    git_merge_options merge_opts = GIT_MERGE_OPTIONS_INIT;
+    git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+    // Initialize libgit2
+    git_libgit2_init();
+
+    // Open local repository
+    if (git_repository_open(&repo, local_path) != 0) {
+        fprintf(stderr, "Failed to open repository at %s\n", local_path);
+        goto cleanup;
+    }
+
+    // Get remote 'origin'
+    if (git_remote_lookup(&remote, repo, "origin") != 0) {
+        fprintf(stderr, "Failed to find remote 'origin'\n");
+        goto cleanup;
+    }
+
+    // Fetch from remote
+    if (git_remote_fetch(remote, NULL, NULL, NULL) != 0) {
+        fprintf(stderr, "Failed to fetch from remote 'origin'\n");
+        goto cleanup;
+    }
+
+    // Get FETCH_HEAD reference
+    if (git_reference_lookup(&fetch_head, repo, "FETCH_HEAD") != 0) {
+        fprintf(stderr, "Failed to lookup FETCH_HEAD\n");
+        goto cleanup;
+    }
+
+    // Create a commit from FETCH_HEAD
+    if (git_annotated_commit_from_ref(&fetch_head_commit, repo, fetch_head) != 0) {
+        fprintf(stderr, "Failed to create annotated commit from FETCH_HEAD\n");
+        goto cleanup;
+    }
+
+    // Configure checkout options
+    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+
+    // Merge FETCH_HEAD in the current branch
+    if (git_merge(repo, (const git_annotated_commit **)&fetch_head_commit, 1, &merge_opts, &checkout_opts) != 0) {
+        fprintf(stderr, "Failed to merge FETCH_HEAD into current branch\n");
+        goto cleanup;
+    }
+
+    printf("Successfully pulled changes into repository at %s\n", local_path);
+
+cleanup:
+    // Free resources
+    if (fetch_head_commit) git_annotated_commit_free(fetch_head_commit);
+    if (fetch_head) git_reference_free(fetch_head);
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+
+    // Shutdown libgit2
+    git_libgit2_shutdown();
 
     return 0;
     

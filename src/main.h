@@ -25,6 +25,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sys/stat.h>
+#include "github.h"
+
+
+/* Structure of a repository
+ * REPO_URL : URL of the repository
+ * LOCAL_PATH : Local path of the repository 
+ */
+typedef struct {
+    const char *repo_url;
+    const char *local_path;
+} thread_args_t;
 
 
 /* Reads the configuration file to get :
@@ -59,9 +71,35 @@ void load_conf( const char *filename )
 }
 
 
+/* Check if a directory exists */
+int directory_exists( const char *path ) {
+    struct stat st;
+
+    return ( stat( path, &st ) == 0 && S_ISDIR( st.st_mode ) );
+}
+
+
+
 void *thread_clone_or_pull_repo( void *arg )
 {
-    long num = (long) arg;
-    
-    fprintf(stderr, "Thread #%ld\n", num);
+    //long num = (long) arg;
+    //fprintf(stderr, "Thread #%ld\n", num);
+
+    thread_args_t *args = (thread_args_t *)arg;
+
+    if ( directory_exists( args->local_path ) ) {
+        fprintf( stdout, "Repository exists locally. Pulling : %s\n", args->local_path );
+
+        if ( pull_repo( args->local_path ) != 0 ) {
+            fprintf( stderr, "Failed to pull repository : %s\n", args->local_path );
+        }
+    } else {
+        fprintf( stdout, "Repository does not exist locally. Cloning : %s\n", args->repo_url );
+
+        if ( clone_repo( args->repo_url, args->local_path ) != 0 ) {
+            fprintf( stderr, "Failed to clone repository : %s\n", args->repo_url );
+        }
+    }
+
+    pthread_exit( NULL );
 }

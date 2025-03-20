@@ -20,7 +20,6 @@
  *************************************************************************************************************/
 
 #include "main.h"
-#include "github.h"
 
 
 int main ( void )
@@ -44,6 +43,7 @@ int main ( void )
 
     // Loads configuration file
     load_conf( config_path );
+    free( config_path );
 
     // Gets the main development path
     const char *dev_path = getenv( "DEV_PATH" );
@@ -61,15 +61,33 @@ int main ( void )
     struct repo_names repos = fetch_github_repos( github_token );
 
     pthread_t thr[repos.count];
+    thread_args_t args[repos.count];
 
     for ( size_t i = 0; i < repos.count; i++ ) {
         // Creates a thread per Github repository
-        if (pthread_create(&thr[i], NULL, thread_clone_or_pull_repo, ( void * )i) != 0) {
+        /*if (pthread_create(&thr[i], NULL, thread_clone_or_pull_repo, ( void * )i) != 0) {
             fprintf(stderr, "Error during pthread_create()\n");
             exit(EXIT_FAILURE);
+        }*/
+
+        char local_path[512];
+        snprintf( local_path, sizeof( local_path ), "%s/%s", dev_path, repos.names[i] );
+
+        args[i].repo_url = repos.names[i];
+        args[i].local_path = strdup( local_path );
+
+        if ( pthread_create( &thr[i], NULL, thread_clone_or_pull_repo, &args[i] ) != 0 ){
+            fprintf( stderr, "Error during pthread_create()\n" );
+            exit( EXIT_FAILURE );
         }
         
         //printf( "Repo : %s\n", repos.names[i] );
+        //free( repos.names[i] );
+    }
+
+    for ( size_t i = 0; i < repos.count; i++ ) {
+        pthread_join( thr[i], NULL );
+        free( ( void *)args[i].local_path );
         free( repos.names[i] );
     }
     

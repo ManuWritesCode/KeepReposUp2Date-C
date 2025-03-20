@@ -10,12 +10,15 @@ ifeq ($(UNAME_S), Darwin) # MacOS
 	LDFLAGS = -L/opt/homebrew/opt/json-c/lib -ljson-c -lcurl
 else ifeq ($(UNAME_S), Linux) # Linux
 	CFLAGS = -I/usr/include/json-c
-	LDFLAGS = -L/usr/lib -ljson-c -lcurl
+	LDFLAGS = -L/usr/lib -ljson-c -lcurl -lgit2
 endif
  
 
-kru2d: build_dir build/main.o
-	$(CC) -o build/kru2d build/main.o $(LDFLAGS)
+kru2d: build_dir build/main.o build/github.o
+	$(CC) -o build/kru2d build/main.o build/github.o $(LDFLAGS)
+
+build/github.o: src/github.c
+	$(CC) -c src/github.c -o build/github.o $(CFLAGS)
 
 build/main.o: src/main.c
 	$(CC) -c src/main.c -o build/main.o $(CFLAGS)

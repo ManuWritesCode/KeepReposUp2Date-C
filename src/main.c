@@ -51,7 +51,14 @@ int main ( void )
     // Gets the Github token
     const char *github_token = getenv( "GITHUB_TOKEN" );
 
-   
+    const char *private_key = getenv( "SSH_PRIVATE_KEY" );
+    const char *public_key = getenv( "SSH_PUBLIC_KEY" );
+
+    if ( !private_key || !public_key ) {
+        fprintf( stderr, "SSH keys not found in configuration file.\n" );
+        exit( EXIT_FAILURE );
+    }
+
     if ( !dev_path || !github_token ) {
         fprintf( stderr, "Please, fill the DEV_PATH or/and GITHUB_TOKEN to your kru2d.conf configuration file !\n" );
         exit( EXIT_FAILURE );
@@ -75,6 +82,8 @@ int main ( void )
 
         args[i].repo_url = repos.names[i];
         args[i].local_path = strdup( local_path );
+        args[i].private_key = private_key;
+        args[i].public_key = public_key;
 
         if ( pthread_create( &thr[i], NULL, thread_clone_or_pull_repo, &args[i] ) != 0 ){
             fprintf( stderr, "Error during pthread_create()\n" );

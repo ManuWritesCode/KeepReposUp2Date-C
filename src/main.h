@@ -36,6 +36,8 @@
 typedef struct {
     const char *repo_url;
     const char *local_path;
+    const char *private_key;
+    const char *public_key;
 } thread_args_t;
 
 
@@ -63,7 +65,9 @@ void load_conf( const char *filename )
         char *value= strtok( NULL, "=" );
 
         if ( key && value ) {
-            setenv( key, value, 1 );
+            if ( setenv( key, value, 1 ) != 0 ) {
+                fprintf( stderr, "Failed to set environement variable : %s\n", key );
+            }
         }
     }
 
@@ -82,11 +86,19 @@ int directory_exists( const char *path ) {
 
 void *thread_clone_or_pull_repo( void *arg )
 {
-    //long num = (long) arg;
-    //fprintf(stderr, "Thread #%ld\n", num);
-
     thread_args_t *args = (thread_args_t *)arg;
 
+    const char *private_key = args->private_key;
+    const char *public_key = args->public_key;
+
+    if ( !private_key || !public_key ) {
+        fprintf( stderr, "SSH keys not privided to thread !\n" );
+        pthread_exit( NULL );
+    }
+
+    printf("Thread using SSH_PRIVATE_KEY=%s\n", private_key);
+    printf("Thread using SSH_PUBLIC_KEY=%s\n", public_key);
+    
     if ( directory_exists( args->local_path ) ) {
         fprintf( stdout, "Repository exists locally. Pulling : %s\n", args->local_path );
 

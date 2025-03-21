@@ -171,6 +171,18 @@ int clone_repo( const char *repo_url, const char *local_path ) {
 
 }
 
+/* Credentials callbacks */
+int credentials_callback( git_cred **cred, const char *url, const char *username_from_url, unsigned int allowed_types, void *payload ) {
+    const char *private_key = getenv( "SSH_PRIVATE_KEY" );
+    const char *public_key = getenv( "SSH_PUBLIC_KEY" );
+
+    if ( !private_key || !public_key ) {
+        fprintf( stderr, "SSH keys not found in configuration file.\n" );
+        return -1;
+    }
+
+    return git_cred_ssh_key_new( cred, username_from_url ? username_from_url : "git", public_key, private_key, NULL );
+}
 
 /* Pull changes from a repository */
 int pull_repo( const char *local_path ) {
@@ -181,6 +193,23 @@ int pull_repo( const char *local_path ) {
     git_annotated_commit *fetch_head_commit = NULL;
     git_merge_options merge_opts = GIT_MERGE_OPTIONS_INIT;
     git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+
+    // Configure SSH authentication callbacks
+    callbacks.credentials = credentials_callback;
+
+     // Set the callbacks for the remote
+     if ( git_remote_init_callbacks( &callbacks, GIT_REMOTE_CALLBACKS_VERSION ) != 0 ) {
+        fprintf( stderr, "Failed to set remote callbacks\n" );
+        goto cleanup;
+    }
+
+    if ( git_remote_connect( remote, GIT_DIRECTION_FETCH, &callbacks, NULL, NULL ) != 0 ) {
+        fprintf( stderr, "Failed to connect to remote 'origin'\n" );
+        goto cleanup;
+    }
+
+
 
     // Initialize libgit2
     git_libgit2_init();
@@ -197,6 +226,8 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
+   
+    
     // Fetch from remote
     if (git_remote_fetch(remote, NULL, NULL, NULL) != 0) {
         fprintf(stderr, "Failed to fetch from remote 'origin'\n");

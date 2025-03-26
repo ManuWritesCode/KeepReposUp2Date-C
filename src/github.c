@@ -222,19 +222,6 @@ int clone_repo( const char *repo_url, const char *local_path ) {
 
 /* Credentials callbacks */
 int credentials_callback( git_cred **cred, const char *url, const char *username_from_url, unsigned int allowed_types, void *payload ) {
-    /*static int attempts = 0;
-    attempts++;
-
-    // Only 5 attempts tryig to connect to Github
-    if ( attempts > 5 ) {
-        fprintf( stderr, "Too many authentication attempts (%d). Aborting.\n", attempts );
-        return -1;
-    }*/
-
-    /*fprintf( stdout, "credentials_callback called (attempt %d)\n", attempts );
-    fprintf( stdout, "URL: %s\n", url );
-    fprintf( stdout, "Username: %s\n", username_from_url ? username_from_url : "NULL" );
-    fprintf( stdout, "Allowed types: %u\n", allowed_types );*/
 
     // Verifying if the authentication type SSH_KEY is allowed
     if ( !( allowed_types & GIT_CREDENTIAL_SSH_KEY ) ) {
@@ -244,9 +231,10 @@ int credentials_callback( git_cred **cred, const char *url, const char *username
 
     const char *private_key = getenv( "SSH_PRIVATE_KEY" );
     const char *public_key = getenv( "SSH_PUBLIC_KEY" );
+    const char *passphrase = getenv( "SSH_PASSPHRASE" );
 
-    if ( !private_key || !public_key ) {
-        fprintf( stderr, "SSH keys not found in configuration file.\n" );
+    if ( !private_key || !public_key || !passphrase ) {
+        fprintf( stderr, "SSH keys or passphrase not found in configuration file.\n" );
         return -1;
     }
 
@@ -254,7 +242,7 @@ int credentials_callback( git_cred **cred, const char *url, const char *username
     fprintf( stdout, "PRIVATE_KEY=%s\n", private_key );
     fprintf( stdout, "PUBLIC_KEY=%s\n\n", public_key );*/
 
-    int result = git_cred_ssh_key_new( cred, username_from_url ? username_from_url : "git", public_key, private_key, NULL );
+    int result = git_cred_ssh_key_new( cred, username_from_url ? username_from_url : "git", public_key, private_key, passphrase );
     if ( result != 0 ) {
         fprintf( stderr, "git_cred_ssh_key_new failed: %s\n", git_error_last()->message );
     }

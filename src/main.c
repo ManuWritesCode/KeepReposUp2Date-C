@@ -76,6 +76,7 @@ int main ( void )
         fprintf( stdout, "Github Username: %s\n", username );
     } else {
         fprintf( stderr, "Failed to retrieve Github username.\n" );
+        exit( EXIT_FAILURE );
     }
 
     // Gets all Github repositories
@@ -86,23 +87,16 @@ int main ( void )
 
     for ( size_t i = 0; i < repos.count; i++ ) {
         // Creates a thread per Github repository
-        /*if (pthread_create(&thr[i], NULL, thread_clone_or_pull_repo, ( void * )i) != 0) {
-            fprintf(stderr, "Error during pthread_create()\n");
-            exit(EXIT_FAILURE);
-        }*/
-
         char local_path[512];
         snprintf( local_path, sizeof( local_path ), "%s/%s", dev_path, repos.names[i] );
 
-        //args[i].repo_url = repos.names[i];
         args[i].repo_url = malloc( 512 );
         if ( !args[i].repo_url ) {
             fprintf( stderr, "Failed to allocate memory for repo_url.\n" );
             exit( EXIT_FAILURE );
         }
         snprintf( args[i].repo_url, 512, "git@github.com:%s/%s.git", username, repos.names[i] );
-        fprintf( stdout, "REPO_URL=%s\n", args[i].repo_url );
-
+        
         args[i].local_path = strdup( local_path );
         if ( !args[i].local_path ) {
             fprintf( stderr, "Failed to allocate memory for local_path.\n" );
@@ -115,9 +109,6 @@ int main ( void )
             fprintf( stderr, "Error during pthread_create()\n" );
             exit( EXIT_FAILURE );
         }
-        
-        //printf( "Repo : %s\n", repos.names[i] );
-        //free( repos.names[i] );
     }
 
     free( username );
@@ -130,7 +121,11 @@ int main ( void )
     }
     
     free( repos.names );
+
+    git_libgit2_shutdown();
+    curl_global_cleanup();
+
     fprintf(stdout, "Program completed successfully. Exiting...\n");
-    //pthread_exit(NULL);
-    return 0;
+    pthread_exit(NULL);
+    //return 0;
 }

@@ -329,6 +329,7 @@ int pull_repo( const char *local_path ) {
 
         int ret = git_branch_set_upstream( head_ref, upstream_ref );
         if ( ret != 0 ) {
+            const git_error *e = git_error_last();
             fprintf( stderr, "Failed to set upstream branch for %s: %s\n", branch_name,
                     e && e->message ? e->message : "Unknown error" );
             goto cleanup;

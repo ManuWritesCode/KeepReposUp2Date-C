@@ -305,6 +305,8 @@ int pull_repo( const char *local_path ) {
     // Check if the upstream branch exists
     char upstream_ref[256];
     snprintf( upstream_ref, sizeof( upstream_ref ), "refs/remotes/origin/%s", branch_name );
+   
+    fprintf( stdout, "Upstream reference: %s\n", upstream_ref );
 
     git_reference *upstream_ref_check = NULL;
     if ( git_reference_lookup( &upstream_ref_check, repo, upstream_ref ) != 0 ) {
@@ -314,6 +316,8 @@ int pull_repo( const char *local_path ) {
         git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
         fetch_opts.download_tags = GIT_REMOTE_DOWNLOAD_TAGS_NONE;
 
+        fprintf( stdout, "Fetching from remote 'origin'...\n" );
+        
         if (git_remote_fetch(remote, NULL, &fetch_opts, NULL) != 0) {
             fprintf(stderr, "Failed to fetch from remote 'origin'\n");
             goto cleanup;

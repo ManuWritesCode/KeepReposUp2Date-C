@@ -330,6 +330,9 @@ int pull_repo( const char *local_path ) {
     git_reference_free( upstream_ref_check );
     
     git_buf upstream_name = GIT_BUF_INIT_CONST( NULL, 0 );
+    
+    fprintf( stdout, "Branch name: %s\n", branch_name );
+
     if ( git_branch_upstream_name( &upstream_name, repo, branch_name ) != 0 ) {
         
         const git_error *e = git_error_last();

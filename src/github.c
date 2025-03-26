@@ -280,6 +280,16 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
+    if ( git_repository_head_detached( repo ) ) {
+        fprintf( stderr, "HEAD is detached. Cannot set upstream branch.\n" );
+        goto cleanup;
+    }
+
+    if ( git_repository_head_unborn( repo ) ) {
+        fprintf( stderr, "The repository has no commits yet. Cannot set upstream branch.\n" );
+        goto cleanup;
+    }
+
     const char *branch_name = NULL;
     if ( git_branch_name( &branch_name, head_ref ) != 0 ) {
         fprintf( stderr, "Failed to get branch name.\n" );

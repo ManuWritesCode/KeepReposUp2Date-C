@@ -271,6 +271,8 @@ int pull_repo( const char *local_path ) {
     if (git_repository_open(&repo, local_path) != 0) {
         fprintf(stderr, "Failed to open repository at %s\n", local_path);
         goto cleanup;
+    } else {
+        fprintf( stdout, "Repository opened successfully.\n" );
     }
 
     // Ensure the local branch has an upstream set
@@ -316,8 +318,6 @@ int pull_repo( const char *local_path ) {
         git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
         fetch_opts.download_tags = GIT_REMOTE_DOWNLOAD_TAGS_NONE;
 
-        fprintf( stdout, "Fetching from remote 'origin'...\n" );
-        
         if (git_remote_fetch(remote, NULL, &fetch_opts, NULL) != 0) {
             fprintf(stderr, "Failed to fetch from remote 'origin'\n");
             goto cleanup;
@@ -336,6 +336,9 @@ int pull_repo( const char *local_path ) {
         //fprintf( stdout, "Attempting to set upstream branch:\n" );
         //fprintf( stdout, "   Local branch: %s\n", branch_name );
         //fprintf( stdout, "   Upstream branch: %s\n", upstream_ref );
+        const git_error *e = git_error_last();
+        fprintf( stderr, "git_branch_upstream_name failed for branch %s: %s\n", branch_name, 
+                e && e->message ? e->message : "Unknown error" );
 
         int ret = git_branch_set_upstream( head_ref, upstream_ref );
         if ( ret != 0 ) {

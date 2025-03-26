@@ -6,8 +6,8 @@ USER_HOME := $(HOME)
 
 # In function of the OS, paths and options are different
 ifeq ($(UNAME_S), Darwin) # MacOS
-	CFLAGS = -I/opt/homebrew/opt/json-c/include
-	LDFLAGS = -L/opt/homebrew/opt/json-c/lib -ljson-c -lcurl
+	CFLAGS = -I/opt/homebrew/opt/json-c/include -I/opt/homebrew/opt/libgit2/include
+	LDFLAGS = -L/opt/homebrew/opt/json-c/lib -L/opt/homebrew/opt/libgit2/lib -ljson-c -lcurl -lgit2
 else ifeq ($(UNAME_S), Linux) # Linux
 	CFLAGS = -I/usr/include/json-c
 	LDFLAGS = -L/usr/lib -ljson-c -lcurl -lgit2

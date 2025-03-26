@@ -52,6 +52,9 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s);
 /* Function to parse and return repository names */
 struct repo_names parse_and_get_repo_names(const char *json);
 
+/* Gets Github username */
+char *get_github_username( const char *github_token );
+
 /* Fetch Github repositories */
 struct repo_names fetch_github_repos( const char *github_token );
 

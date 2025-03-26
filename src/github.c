@@ -107,6 +107,55 @@ struct repo_names parse_and_get_repo_names(const char *json) {
 }
 
 
+/* Gets Github username */
+char *get_github_username( const char *github_token ) {
+    CURL *curl;
+    CURLcode res;
+    struct string s;
+    char *username = NULL;
+
+    init_string( &s );
+    curl_global_init( CURL_GLOBAL_DEFAULT );
+    
+    curl = curl_easy_init();
+    if ( curl ) {
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append( headers, "User-Agent: KeepReposUp2Date" );
+        headers = curl_slist_append( headers, "Accept: application/vnd.github.v3+json" );
+
+        char auth_header[256];
+        snprintf( auth_header, sizeof( auth_header ), "Authorization: token %s", github_token );
+        headers = curl_slist_append( headers, auth_header );
+
+        curl_easy_setopt( curl, CURLOPT_URL, "https://api.github.com/user" );
+        curl_easy_setopt( curl, CURLOPT_HTTPHEADER, headers );
+        curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, writefunc );
+        curl_easy_setopt( curl, CURLOPT_WRITEDATA, &s );
+
+        res = curl_easy_perform( curl );
+        if ( res != CURLE_OK ) {
+            fprintf( stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror( res ) );
+        } else {
+            struct json_object *parsed_json = json_tokener_parse( s.ptr );
+            if ( parsed_json ) {
+                struct json_object *login;
+                if ( json_object_object_get_ex( parsed_json, "login", &login ) ) {
+                    username = strdup( json_object_get_string( login ) );
+                }
+                json_object_put( parsed_json );
+            }
+        }
+
+        curl_easy_cleanup( curl );
+        curl_slist_free_all( headers );
+    }
+
+    free( s.ptr );
+    curl_global_cleanup();
+
+    return username;
+}
+
 /* Fetch Github repositories */
 struct repo_names fetch_github_repos( const char *github_token ) {
 
@@ -115,9 +164,9 @@ struct repo_names fetch_github_repos( const char *github_token ) {
     struct string s;
     struct repo_names repos = { NULL, 0 };
 
-    init_string(&s);
+    init_string( &s );
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl_global_init( CURL_GLOBAL_DEFAULT );
     curl = curl_easy_init();
     if (curl) {
         struct curl_slist *headers = NULL;
@@ -173,6 +222,26 @@ int clone_repo( const char *repo_url, const char *local_path ) {
 
 /* Credentials callbacks */
 int credentials_callback( git_cred **cred, const char *url, const char *username_from_url, unsigned int allowed_types, void *payload ) {
+    /*static int attempts = 0;
+    attempts++;
+
+    // Only 5 attempts tryig to connect to Github
+    if ( attempts > 5 ) {
+        fprintf( stderr, "Too many authentication attempts (%d). Aborting.\n", attempts );
+        return -1;
+    }*/
+
+    /*fprintf( stdout, "credentials_callback called (attempt %d)\n", attempts );
+    fprintf( stdout, "URL: %s\n", url );
+    fprintf( stdout, "Username: %s\n", username_from_url ? username_from_url : "NULL" );
+    fprintf( stdout, "Allowed types: %u\n", allowed_types );*/
+
+    // Verifying if the authentication type SSH_KEY is allowed
+    if ( !( allowed_types & GIT_CREDENTIAL_SSH_KEY ) ) {
+        fprintf( stderr, "Unsupported authentication type requested.\n" );
+        return -1;
+    }
+
     const char *private_key = getenv( "SSH_PRIVATE_KEY" );
     const char *public_key = getenv( "SSH_PUBLIC_KEY" );
 
@@ -181,7 +250,16 @@ int credentials_callback( git_cred **cred, const char *url, const char *username
         return -1;
     }
 
-    return git_cred_ssh_key_new( cred, username_from_url ? username_from_url : "git", public_key, private_key, NULL );
+    /*fprintf( stdout, "Using SSH keys:\n" );
+    fprintf( stdout, "PRIVATE_KEY=%s\n", private_key );
+    fprintf( stdout, "PUBLIC_KEY=%s\n\n", public_key );*/
+
+    int result = git_cred_ssh_key_new( cred, username_from_url ? username_from_url : "git", public_key, private_key, NULL );
+    if ( result != 0 ) {
+        fprintf( stderr, "git_cred_ssh_key_new failed: %s\n", git_error_last()->message );
+    }
+
+    return result;
 }
 
 /* Pull changes from a repository */
@@ -195,24 +273,11 @@ int pull_repo( const char *local_path ) {
     git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 
-    // Configure SSH authentication callbacks
-    callbacks.credentials = credentials_callback;
-
-     // Set the callbacks for the remote
-     if ( git_remote_init_callbacks( &callbacks, GIT_REMOTE_CALLBACKS_VERSION ) != 0 ) {
-        fprintf( stderr, "Failed to set remote callbacks\n" );
-        goto cleanup;
+     // Initialize libgit2
+     if ( git_libgit2_init() < 0 ) {
+        fprintf( stderr, "Failed to initialize libgit2\n" );
+        return -1;
     }
-
-    if ( git_remote_connect( remote, GIT_DIRECTION_FETCH, &callbacks, NULL, NULL ) != 0 ) {
-        fprintf( stderr, "Failed to connect to remote 'origin'\n" );
-        goto cleanup;
-    }
-
-
-
-    // Initialize libgit2
-    git_libgit2_init();
 
     // Open local repository
     if (git_repository_open(&repo, local_path) != 0) {
@@ -220,13 +285,32 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
-    // Get remote 'origin'
-    if (git_remote_lookup(&remote, repo, "origin") != 0) {
+     // Get remote 'origin'
+     if (git_remote_lookup(&remote, repo, "origin") != 0) {
         fprintf(stderr, "Failed to find remote 'origin'\n");
         goto cleanup;
     }
 
-   
+    // Set the callbacks for the remote
+    if ( git_remote_init_callbacks( &callbacks, GIT_REMOTE_CALLBACKS_VERSION ) != 0 ) {
+        fprintf( stderr, "Failed to set remote callbacks\n" );
+        goto cleanup;
+    }
+
+    // Configure SSH authentication callbacks
+    callbacks.credentials = credentials_callback;
+    callbacks.transfer_progress = NULL;
+    callbacks.payload = NULL;
+
+    
+    // Connects to the remote
+    fprintf( stdout, "Connecting to remote...\n" );
+    if ( git_remote_connect( remote, GIT_DIRECTION_FETCH, &callbacks, NULL, NULL ) != 0 ) {
+        const git_error *e = git_error_last();
+        fprintf( stderr, "Failed to connect to remote 'origin': %s\n", e && e->message ? e->message : "Unknown error"  );
+        goto cleanup;
+    }
+    fprintf( stdout, "Connected to remote.\n" );
     
     // Fetch from remote
     if (git_remote_fetch(remote, NULL, NULL, NULL) != 0) {
@@ -268,5 +352,4 @@ cleanup:
     git_libgit2_shutdown();
 
     return 0;
-    
 }

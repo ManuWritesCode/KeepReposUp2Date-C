@@ -24,6 +24,8 @@
 
 int main ( void )
 {    
+    signal( SIGINT, handle_sigint );
+    
     const char *home = getenv( "HOME" );
     
     if ( home == NULL ) {
@@ -50,6 +52,10 @@ int main ( void )
 
     // Gets the Github token
     const char *github_token = getenv( "GITHUB_TOKEN" );
+    if ( !github_token ) {
+        fprintf( stderr, "GITHUB_TOKEN is not set in the configuration file.\n" );
+        exit( EXIT_FAILURE );
+    }
 
     const char *private_key = getenv( "SSH_PRIVATE_KEY" );
     const char *public_key = getenv( "SSH_PUBLIC_KEY" );
@@ -62,6 +68,14 @@ int main ( void )
     if ( !dev_path || !github_token ) {
         fprintf( stderr, "Please, fill the DEV_PATH or/and GITHUB_TOKEN to your kru2d.conf configuration file !\n" );
         exit( EXIT_FAILURE );
+    }
+
+    // Gets Github username
+    char *username = get_github_username( github_token );
+    if ( username ) {
+        fprintf( stdout, "Github Username: %s\n", username );
+    } else {
+        fprintf( stderr, "Failed to retrieve Github username.\n" );
     }
 
     // Gets all Github repositories
@@ -80,8 +94,20 @@ int main ( void )
         char local_path[512];
         snprintf( local_path, sizeof( local_path ), "%s/%s", dev_path, repos.names[i] );
 
-        args[i].repo_url = repos.names[i];
+        //args[i].repo_url = repos.names[i];
+        args[i].repo_url = malloc( 512 );
+        if ( !args[i].repo_url ) {
+            fprintf( stderr, "Failed to allocate memory for repo_url.\n" );
+            exit( EXIT_FAILURE );
+        }
+        snprintf( args[i].repo_url, 512, "git@github.com:%s/%s.git", username, repos.names[i] );
+        fprintf( stdout, "REPO_URL=%s\n", args[i].repo_url );
+
         args[i].local_path = strdup( local_path );
+        if ( !args[i].local_path ) {
+            fprintf( stderr, "Failed to allocate memory for local_path.\n" );
+            exit( EXIT_FAILURE );
+        }
         args[i].private_key = private_key;
         args[i].public_key = public_key;
 
@@ -94,9 +120,12 @@ int main ( void )
         //free( repos.names[i] );
     }
 
+    free( username );
+
     for ( size_t i = 0; i < repos.count; i++ ) {
         pthread_join( thr[i], NULL );
         free( ( void *)args[i].local_path );
+        free( ( void *)args[i].repo_url );
         free( repos.names[i] );
     }
     

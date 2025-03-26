@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include "github.h"
 
 
@@ -34,12 +35,19 @@
  * LOCAL_PATH : Local path of the repository 
  */
 typedef struct {
-    const char *repo_url;
-    const char *local_path;
+    char *repo_url;
+    char *local_path;
     const char *private_key;
     const char *public_key;
 } thread_args_t;
 
+/*
+ * Intercepts handle signal
+ */
+void handle_sigint( int sig ) {
+    fprintf( stderr, "Interrupt signal received./ Exiting...\n" );
+    exit( 1 );
+}
 
 /* Reads the configuration file to get :
  * DEV_PATH : the path where all projects are stored
@@ -96,21 +104,21 @@ void *thread_clone_or_pull_repo( void *arg )
         pthread_exit( NULL );
     }
 
-    printf("Thread using SSH_PRIVATE_KEY=%s\n", private_key);
-    printf("Thread using SSH_PUBLIC_KEY=%s\n", public_key);
+    //printf("Thread using SSH_PRIVATE_KEY=%s\n", private_key);
+    //printf("Thread using SSH_PUBLIC_KEY=%s\n", public_key);
     
     if ( directory_exists( args->local_path ) ) {
-        fprintf( stdout, "Repository exists locally. Pulling : %s\n", args->local_path );
+        fprintf( stdout, "Repository exists locally. Pulling : %s to %s\n", args->repo_url, args->local_path );
 
         if ( pull_repo( args->local_path ) != 0 ) {
             fprintf( stderr, "Failed to pull repository : %s\n", args->local_path );
-        }
+        } 
     } else {
         fprintf( stdout, "Repository does not exist locally. Cloning : %s\n", args->repo_url );
 
-        if ( clone_repo( args->repo_url, args->local_path ) != 0 ) {
-            fprintf( stderr, "Failed to clone repository : %s\n", args->repo_url );
-        }
+        //if ( clone_repo( args->repo_url, args->local_path ) != 0 ) {
+        //    fprintf( stderr, "Failed to clone repository : %s\n", args->repo_url );
+        //}
     }
 
     pthread_exit( NULL );

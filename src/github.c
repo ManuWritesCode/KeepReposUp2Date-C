@@ -282,7 +282,7 @@ int pull_repo( const char *local_path ) {
     }
 
     if ( git_repository_head_detached( repo ) ) {
-        fprintf( stderr, "HEAD is detached. Cannot set upstream branch.\n" );
+        fprintf( stderr, "HEAD is detached. Cannot check upstream branch.\n" );
         goto cleanup;
     }
 
@@ -292,7 +292,7 @@ int pull_repo( const char *local_path ) {
     }
 
     if ( !git_reference_is_branch( head_ref ) ) {
-        fprintf( stderr, "HEAD is not a local branch. Cannot set upstream branch.\n" );
+        fprintf( stderr, "HEAD is not a local branch. Cannot check upstream branch.\n" );
         goto cleanup;
     }
     

@@ -345,10 +345,10 @@ int pull_repo( const char *local_path ) {
         git_buf_dispose( &upstream_name );
     }
 
-    if ( upstream_name.ptr ) {
+    /*if ( upstream_name.ptr ) {
         fprintf( stdout, "Upstream branch for %s is %s\n", branch_name, upstream_name.ptr );
         git_buf_dispose( &upstream_name );
-    }
+    }*/
 
     int ret = git_branch_set_upstream( head_ref, upstream_ref );
     if ( ret != 0 ) {

@@ -25,7 +25,7 @@
 int main ( void )
 {    
     signal( SIGINT, handle_sigint );
-    
+
     const char *home = getenv( "HOME" );
     
     if ( home == NULL ) {
@@ -130,6 +130,6 @@ int main ( void )
     }
     
     free( repos.names );
-    
+    fprintf(stdout, "Program completed successfully. Exiting...\n");
     pthread_exit(NULL);
 }

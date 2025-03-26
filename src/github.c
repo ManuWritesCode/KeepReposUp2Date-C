@@ -338,6 +338,6 @@ cleanup:
 
     // Shutdown libgit2
     git_libgit2_shutdown();
-
+    fprintf( stdout, "End of pull_repon thread.\n" );
     return 0;
 }

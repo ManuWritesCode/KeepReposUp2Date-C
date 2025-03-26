@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <git2.h>
 #include "github.h"
 
 

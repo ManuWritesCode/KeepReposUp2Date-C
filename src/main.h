@@ -121,5 +121,6 @@ void *thread_clone_or_pull_repo( void *arg )
         //}
     }
 
-    pthread_exit( NULL );
+    //pthread_exit( NULL );
+    return NULL;
 }

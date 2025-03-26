@@ -273,8 +273,34 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
-     // Get remote 'origin'
-     if (git_remote_lookup(&remote, repo, "origin") != 0) {
+    // Ensure the local branch has an upstream set
+    git_reference *head_ref = NULL;
+    if (git_repository_head( &head_ref, repo ) != 0 ) {
+        fprintf( stderr, "Failed to get HEAD reference.\n" );
+        goto cleanup;
+    }
+
+    const char *branch_name = NULL;
+    if ( git_branch_name( &branch_name, head_ref ) != 0 ) {
+        fprintf( stderr, "Failed to get branch name.\n" );
+        goto cleanup;
+    }
+
+    if ( git_branch_upstream_name( NULL, repo, branch_name ) != 0 ) {
+        // If no upstream is set, configure it
+        char upstream_ref[256];
+        snprintf( upstream_ref, sizeof( upstream_ref ), "refs/remotes/origin/%s", branch_name );
+        if ( git_branch_set_upstream( head_ref, upstream_ref ) != 0 ) {
+            fprintf( stderr, "Failed to set upstream branch for %s\n", branch_name );
+            goto cleanup;
+        }
+        fprintf( stdout, "Upstream branch set for %s -> %s\n", branch_name, upstream_ref );
+    }
+
+    git_reference_free( head_ref );
+
+    // Get remote 'origin'
+    if (git_remote_lookup(&remote, repo, "origin") != 0) {
         fprintf(stderr, "Failed to find remote 'origin'\n");
         goto cleanup;
     }
@@ -301,6 +327,9 @@ int pull_repo( const char *local_path ) {
     fprintf( stdout, "Connected to remote.\n" );
     
     // Fetch from remote
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    fetch_opts.download_tags = GIT_REMOTE_DOWNLOAD_TAGS_NONE;
+
     if (git_remote_fetch(remote, NULL, NULL, NULL) != 0) {
         fprintf(stderr, "Failed to fetch from remote 'origin'\n");
         goto cleanup;
@@ -321,6 +350,23 @@ int pull_repo( const char *local_path ) {
     // Configure checkout options
     checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
 
+    // Verifies if the local repo is up to date
+    if ( git_repository_head_unborn( repo ) ) {
+        fprintf( stdout, "The repository has no commits yet.\n" );
+        goto cleanup;
+    }
+
+    git_oid local_oid, remote_oid;
+    if ( git_reference_name_to_id( &local_oid, repo, "HEAD" ) != 0 ||
+         git_reference_name_to_id( &remote_oid, repo, "FETCH_HEAD" ) != 0 ) {
+            fprintf( stderr, "Failed to get OIDs for HEAD or FETCH_HEAD.\n" );
+            goto cleanup;
+    }
+
+    if ( git_oid_cmp( &local_oid, &remote_oid ) == 0 ) {
+        fprintf( stdout, "The local branch is already up to date with the remote branch.\n" );
+        goto cleanup;
+    }
     // Merge FETCH_HEAD in the current branch
     if (git_merge(repo, (const git_annotated_commit **)&fetch_head_commit, 1, &merge_opts, &checkout_opts) != 0) {
         fprintf(stderr, "Failed to merge FETCH_HEAD into current branch\n");

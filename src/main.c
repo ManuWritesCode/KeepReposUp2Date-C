@@ -126,6 +126,5 @@ int main ( void )
     curl_global_cleanup();
 
     fprintf(stdout, "Program completed successfully. Exiting...\n");
-    pthread_exit(NULL);
-    //return 0;
+    return 0;
 }

@@ -131,5 +131,6 @@ int main ( void )
     
     free( repos.names );
     fprintf(stdout, "Program completed successfully. Exiting...\n");
-    pthread_exit(NULL);
+    //pthread_exit(NULL);
+    return 0;
 }

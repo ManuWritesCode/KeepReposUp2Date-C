@@ -304,7 +304,7 @@ int pull_repo( const char *local_path ) {
 
     // Check if the upstream branch exists
     char upstream_ref[256];
-    snprintf( upstream_ref, sizeof( upstream_ref ), "refs/remotes/origin/%s", branch_name );
+    snprintf( upstream_ref, sizeof( upstream_ref ), "remotes/origin/%s", branch_name );
 
     git_reference *upstream_ref_check = NULL;
     if ( git_reference_lookup( &upstream_ref_check, repo, upstream_ref ) != 0 ) {

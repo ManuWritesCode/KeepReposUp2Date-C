@@ -331,22 +331,27 @@ int pull_repo( const char *local_path ) {
     }
     git_reference_free( upstream_ref_check );
     
-    if ( git_branch_upstream_name( NULL, repo, branch_name ) != 0 ) {
-        // If no upstream is set, configure it
-        //fprintf( stdout, "Attempting to set upstream branch:\n" );
-        //fprintf( stdout, "   Local branch: %s\n", branch_name );
-        //fprintf( stdout, "   Upstream branch: %s\n", upstream_ref );
+    char *upstream_name = NULL;
+    if ( git_branch_upstream_name( &upstream_name, repo, branch_name ) != 0 ) {
+        
         const git_error *e = git_error_last();
         fprintf( stderr, "git_branch_upstream_name failed for branch %s: %s\n", branch_name, 
                 e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
 
-        int ret = git_branch_set_upstream( head_ref, upstream_ref );
-        if ( ret != 0 ) {
-            const git_error *e = git_error_last();
-            fprintf( stderr, "Failed to set upstream branch for %s: %s\n", branch_name,
-                    e && e->message ? e->message : "Unknown error" );
-            goto cleanup;
-        }
+    if ( upstream_name ) {
+        fprintf( stdout, "Upstream branch for %s is %s\n", branch_name, upstream_name );
+        git_buf_dispose( ( git_buf * )&upstream_name );
+    }
+
+    int ret = git_branch_set_upstream( head_ref, upstream_ref );
+    if ( ret != 0 ) {
+        const git_error *e = git_error_last();
+        fprintf( stderr, "Failed to set upstream branch for %s: %s\n", branch_name,
+                e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    } else {
         fprintf( stdout, "Upstream branch set for %s -> %s\n", branch_name, upstream_ref );
     }
 

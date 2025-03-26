@@ -115,7 +115,7 @@ void *thread_clone_or_pull_repo( void *arg )
             fprintf( stderr, "Failed to pull repository : %s\n", args->local_path );
         } 
     } else {
-        fprintf( stdout, "Repository does not exist locally. Cloning : %s\n", args->repo_url );
+        //fprintf( stdout, "Repository does not exist locally. Cloning : %s\n", args->repo_url );
 
         //if ( clone_repo( args->repo_url, args->local_path ) != 0 ) {
         //    fprintf( stderr, "Failed to clone repository : %s\n", args->repo_url );

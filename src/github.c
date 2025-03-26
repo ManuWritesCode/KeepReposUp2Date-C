@@ -271,8 +271,6 @@ int pull_repo( const char *local_path ) {
     if (git_repository_open(&repo, local_path) != 0) {
         fprintf(stderr, "Failed to open repository at %s\n", local_path);
         goto cleanup;
-    } else {
-        fprintf( stdout, "Repository opened successfully.\n" );
     }
 
     // Ensure the local branch has an upstream set
@@ -331,7 +329,7 @@ int pull_repo( const char *local_path ) {
     }
     git_reference_free( upstream_ref_check );
     
-    char *upstream_name = NULL;
+    git_buf upstream_name = GIT_BUF_INIT_CONST( NULL, 0 );
     if ( git_branch_upstream_name( &upstream_name, repo, branch_name ) != 0 ) {
         
         const git_error *e = git_error_last();
@@ -340,9 +338,9 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
-    if ( upstream_name ) {
-        fprintf( stdout, "Upstream branch for %s is %s\n", branch_name, upstream_name );
-        git_buf_dispose( ( git_buf * )&upstream_name );
+    if ( upstream_name.ptr ) {
+        fprintf( stdout, "Upstream branch for %s is %s\n", branch_name, upstream_name.ptr );
+        git_buf_dispose( &upstream_name );
     }
 
     int ret = git_branch_set_upstream( head_ref, upstream_ref );

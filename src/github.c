@@ -286,10 +286,33 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
+    // Check if the upstream branch exists
+    char upstream_ref[256];
+    snprintf( upstream_ref, sizeof( upstream_ref ), "refs/remotes/origin/%s", branch_name );
+
+    git_reference *upstream_ref_check = NULL;
+    if ( git_reference_lookup( &upstream_ref_check, repo, upstream_ref ) != 0 ) {
+        fprintf( stderr, "The upstream branch '%s' does not exist.\n", upstream_ref );
+
+        // Fetch from remote
+        git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+        fetch_opts.download_tags = GIT_REMOTE_DOWNLOAD_TAGS_NONE;
+
+        if (git_remote_fetch(remote, NULL, &fetch_opts, NULL) != 0) {
+            fprintf(stderr, "Failed to fetch from remote 'origin'\n");
+            goto cleanup;
+        }
+
+        // Re-check if the upstream branch exists after fetching
+        if (git_reference_lookup(&upstream_ref_check, repo, upstream_ref) != 0) {
+            fprintf(stderr, "The upstream branch '%s' still does not exist after fetching.\n", upstream_ref);
+            goto cleanup;
+        }
+    }
+    git_reference_free( upstream_ref_check );
+    
     if ( git_branch_upstream_name( NULL, repo, branch_name ) != 0 ) {
         // If no upstream is set, configure it
-        char upstream_ref[256];
-        snprintf( upstream_ref, sizeof( upstream_ref ), "refs/remotes/origin/%s", branch_name );
         if ( git_branch_set_upstream( head_ref, upstream_ref ) != 0 ) {
             fprintf( stderr, "Failed to set upstream branch for %s\n", branch_name );
             goto cleanup;
@@ -326,14 +349,7 @@ int pull_repo( const char *local_path ) {
     }
     fprintf( stdout, "Connected to remote.\n" );
     
-    // Fetch from remote
-    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
-    fetch_opts.download_tags = GIT_REMOTE_DOWNLOAD_TAGS_NONE;
-
-    if (git_remote_fetch(remote, NULL, NULL, NULL) != 0) {
-        fprintf(stderr, "Failed to fetch from remote 'origin'\n");
-        goto cleanup;
-    }
+    
 
     // Get FETCH_HEAD reference
     if (git_reference_lookup(&fetch_head, repo, "FETCH_HEAD") != 0) {

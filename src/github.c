@@ -275,6 +275,7 @@ int pull_repo( const char *local_path ) {
 
     // Ensure the local branch has an upstream set
     git_reference *head_ref = NULL;
+    
     if (git_repository_head( &head_ref, repo ) != 0 ) {
         fprintf( stderr, "Failed to get HEAD reference.\n" );
         goto cleanup;
@@ -290,6 +291,11 @@ int pull_repo( const char *local_path ) {
         goto cleanup;
     }
 
+    if ( !git_reference_is_branch( head_ref ) ) {
+        fprintf( stderr, "HEAD is not a local branch. Cannot set upstream branch.\n" );
+        goto cleanup;
+    }
+    
     const char *branch_name = NULL;
     if ( git_branch_name( &branch_name, head_ref ) != 0 ) {
         fprintf( stderr, "Failed to get branch name.\n" );

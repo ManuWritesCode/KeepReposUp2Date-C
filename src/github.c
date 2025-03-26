@@ -326,9 +326,11 @@ int pull_repo( const char *local_path ) {
         fprintf( stdout, "Attempting to set upstream branch:\n" );
         fprintf( stdout, "   Local branch: %s\n", branch_name );
         fprintf( stdout, "   Upstream branch: %s\n", upstream_ref );
-        
-        if ( git_branch_set_upstream( head_ref, upstream_ref ) != 0 ) {
-            fprintf( stderr, "Failed to set upstream branch for %s\n", branch_name );
+
+        int ret = git_branch_set_upstream( head_ref, upstream_ref );
+        if ( ret != 0 ) {
+            fprintf( stderr, "Failed to set upstream branch for %s: %s\n", branch_name,
+                    e && e->message ? e->message : "Unknown error" );
             goto cleanup;
         }
         fprintf( stdout, "Upstream branch set for %s -> %s\n", branch_name, upstream_ref );

@@ -323,6 +323,10 @@ int pull_repo( const char *local_path ) {
     
     if ( git_branch_upstream_name( NULL, repo, branch_name ) != 0 ) {
         // If no upstream is set, configure it
+        fprintf( stdout, "Attempting to set upstream branch:\n" );
+        fprintf( stdout, "   Local branch: %s\n", branch_name );
+        fprintf( stdout, "   Upstream branch: %s\n", upstream_ref );
+        
         if ( git_branch_set_upstream( head_ref, upstream_ref ) != 0 ) {
             fprintf( stderr, "Failed to set upstream branch for %s\n", branch_name );
             goto cleanup;

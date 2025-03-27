@@ -6,15 +6,16 @@
 
 <br />
 
-I use 3 computers to code :
+**I use 3 computers to code :**
 
-a desktop at home running Debian GNU/Linux (SID version)
-a desktop at work, also running Debian GNU/Linux (SD version)
-and a Macbook Pro, with MacOS.
+- a desktop at home running Debian GNU/Linux (SID version)
+- a desktop at work, also running Debian GNU/Linux (SD version)
+- and a Macbook Pro, with MacOS.
+
 How can I keep my local repositories on my 3 computers automatically up to date ?
 
 To answer that question, I wrote a Bash script ([here](https://github.com/ManuWritesCode/KeepReposUp2Date)), but it is too slow for my usage. 
-So, I decided to write a C version, which will launch as many threads as I have Github repositories. Each thread will run in parallel. I hope this will make updating Github repositories faster.
+So, I decided to write a C version, which will launch as many threads as I have Github repositories. Each thread will run in parallel. I hope this will make updating Github repositories faster
 
 <br />
 
@@ -27,7 +28,7 @@ You can install them by running :
 
 - on MacOS :
 ```bash
-brew install curl json-c
+brew install curl json-c libgit2
 ```
 
 - on Debian GNU/Linux
@@ -78,11 +79,15 @@ nano ~/.config/kru2d.conf
 and modify it like this :
 
 ```bash
-DEV_PATH=Your/main/development/path
-GITHUB_TOKEN=Your_Github_token_to_access_your_Github_account
+DEV_PATH=path/of/your/main/development/directory
+GITHUB_TOKEN=your_Github_token_to_access_your_Github_account
+GITHUB_USERNAME=your_github_username
+SSH_PRIVATE_KEY=path/of/your/SSH/private/key
+SSH_PUBLIC_KEY=path/of/your/SSH/public/key
+SSH_PASSPHRASE=your_SSH_key_passphrase
 ```
 
-by replacing _Your/main/development/path_ with the path containing all your development projects and _Your_Github_token_to_access_your_Github_account_ by your Github token.
+by replacing _path/of/your/main/development/directory_ with the path containing all your development projects, _Your_Github_token_to_access_your_Github_account_ by your Github token, _your_github_username_ by your Github username, _path/of/your/SSH/private/key_ by the path where your private SSH keys are stored (in general : _~/.ssh/<key_file>_), _path/of/your/SSH/public/key_ by the path where your public SSH keys are stored (in general : _~/.ssh/<key_file>.pub_), and _your_SSH_key_passphrase_ by the passphrase you defined when you have created your SSH keys.
 
 ## Run the binary automatically
 

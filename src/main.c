@@ -19,112 +19,52 @@
  *
  *************************************************************************************************************/
 
-#include "main.h"
+#include "kru2d.h"
 
 
 int main ( void )
-{    
+{
+    kru2d_conf conf;
+
     signal( SIGINT, handle_sigint );
-
-    const char *home = getenv( "HOME" );
-    
-    if ( home == NULL ) {
-        fprintf( stderr, "Failed to get the HOME environment variable.\n" );
-        exit( EXIT_FAILURE );
-    }
-
-    // Constructs the complete path to the configuration file
-    size_t path_length = strlen( home ) + strlen( "/.config/KeepReposUp2Date/kru2d.conf" ) + 1;
-    char *config_path = malloc( path_length );
-    if ( config_path == NULL ) {
-        fprintf( stderr, "Failed to allocate memory for config_path.\n" );
-        exit( EXIT_FAILURE );
-    }
-    snprintf( config_path, path_length, "%s/.config/KeepReposUp2Date/kru2d.conf", home );
-
-
+ 
     // Loads configuration file
-    load_conf( config_path );
-    free( config_path );
+    load_conf();
 
-    // Gets the main development path
-    const char *dev_path = getenv( "DEV_PATH" );
-
-    // Gets the Github token
-    const char *github_token = getenv( "GITHUB_TOKEN" );
-    if ( !github_token ) {
-        fprintf( stderr, "GITHUB_TOKEN is not set in the configuration file.\n" );
-        exit( EXIT_FAILURE );
-    }
-
-    const char *private_key = getenv( "SSH_PRIVATE_KEY" );
-    const char *public_key = getenv( "SSH_PUBLIC_KEY" );
-
-    if ( !private_key || !public_key ) {
-        fprintf( stderr, "SSH keys not found in configuration file.\n" );
-        exit( EXIT_FAILURE );
-    }
-
-    if ( !dev_path || !github_token ) {
-        fprintf( stderr, "Please, fill the DEV_PATH or/and GITHUB_TOKEN to your kru2d.conf configuration file !\n" );
-        exit( EXIT_FAILURE );
-    }
-
-    // Gets Github username
-    char *username = get_github_username( github_token );
-    if ( username ) {
-        fprintf( stdout, "Github Username: %s\n", username );
-    } else {
-        fprintf( stderr, "Failed to retrieve Github username.\n" );
+    // Stores all environment variables in the kru2d_conf structure
+    conf.dev_path = getenv( "DEV_PATH" );
+    conf.github_token = getenv( "GITHUB_TOKEN" );
+    conf.github_username = getenv( "GITHUB_USERNAME" );
+    conf.ssh_private_key = getenv( "SSH_PRIVATE_KEY" );
+    conf.ssh_public_key = getenv( "SSH_PUBLIC_KEY" );
+    conf.ssh_passphrase = getenv( "SSH_PASSPHRASE" );
+    
+    if ( conf.dev_path == NULL || conf.github_token == NULL || conf.github_username == NULL ||
+         conf.ssh_private_key == NULL || conf.ssh_public_key == NULL || conf.ssh_passphrase == NULL ) {
+        fprintf( stderr, "One or more environment variables not defined. Please, modify your configuration file !\n" );
         exit( EXIT_FAILURE );
     }
 
     // Gets all Github repositories
-    struct repo_names repos = fetch_github_repos( github_token );
-
+    struct repo_names repos = fetch_github_repos( conf.github_token );
+    
+    // Threads to parallaize clone or pull repos
     pthread_t thr[repos.count];
     thread_args_t args[repos.count];
 
+    // For each repository, creates a thread to clone or pull the repository
     for ( size_t i = 0; i < repos.count; i++ ) {
-        // Creates a thread per Github repository
-        char local_path[512];
-        snprintf( local_path, sizeof( local_path ), "%s/%s", dev_path, repos.names[i] );
+        args[i].conf = &conf;
+        args[i].repos = &repos;
+        args[i].repo_index = i;
 
-        args[i].repo_url = malloc( 512 );
-        if ( !args[i].repo_url ) {
-            fprintf( stderr, "Failed to allocate memory for repo_url.\n" );
-            exit( EXIT_FAILURE );
+        if ( pthread_create( &thr[i], NULL, thread_clone_or_pull_repo, &args[i] ) != 0 ) {
+            fprintf( stderr, "Error while creating thread for repository %s\n", repos.names[i] );
         }
-        snprintf( args[i].repo_url, 512, "git@github.com:%s/%s.git", username, repos.names[i] );
-        
-        args[i].local_path = strdup( local_path );
-        if ( !args[i].local_path ) {
-            fprintf( stderr, "Failed to allocate memory for local_path.\n" );
-            exit( EXIT_FAILURE );
-        }
-        args[i].private_key = private_key;
-        args[i].public_key = public_key;
-
-        if ( pthread_create( &thr[i], NULL, thread_clone_or_pull_repo, &args[i] ) != 0 ){
-            fprintf( stderr, "Error during pthread_create()\n" );
-            exit( EXIT_FAILURE );
-        }
-    }
-
-    free( username );
-
-    for ( size_t i = 0; i < repos.count; i++ ) {
         pthread_join( thr[i], NULL );
-        free( ( void *)args[i].local_path );
-        free( ( void *)args[i].repo_url );
-        free( repos.names[i] );
     }
-    
-    free( repos.names );
 
-    git_libgit2_shutdown();
-    curl_global_cleanup();
+    free_repo_names( &repos );
 
-    fprintf(stdout, "Program completed successfully. Exiting...\n");
     return 0;
 }

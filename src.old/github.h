@@ -19,65 +19,49 @@
  *
  *************************************************************************************************************/
 
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <curl/curl.h>
+#include <json-c/json.h>
 
- #include <errno.h>
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
- #include <unistd.h>
- #include <curl/curl.h>
- #include <json-c/json.h>
 
- 
- /* 
-  * Structure containing the Github API response 
-  */
+/* Structure containing the Github API response */
 struct string {
     char *ptr;
     size_t len;
 };
 
-/* 
- * Structure to hold the repository names 
- */
+/* Structure to hold the repository names */
 struct repo_names {
     char **names;
-    char **urls;
     size_t count;
 };
 
 
-/* 
- * Initialize the structure containing the Github API response 
- */
+/* Initialize the structure containing the Github API response */
 void init_string(struct string *s);
 
-/* 
- * Callback function to write data from Github API response 
- */
+
+/* Callback function to write data from Github API response */
 size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s);
 
-/* 
- * Function to parse and return repository names 
- */
+
+/* Function to parse and return repository names */
 struct repo_names parse_and_get_repo_names(const char *json);
 
-/* 
- * Free memory for repos_name structure 
- */
-void free_repo_names( struct repo_names *repos );
+/* Gets Github username */
+char *get_github_username( const char *github_token );
 
-/* 
- * Fetch Github repositories 
- */
+/* Fetch Github repositories */
 struct repo_names fetch_github_repos( const char *github_token );
 
-/* 
- * Clone a repository 
- */
-int clone_repo( const char *repo_url, const char *local_path, const char *ssh_private_key, const char *ssh_public_key, const char *ssh_passphrase );
 
-/*
- * Pull a repository
- */
-int pull_repo();
+/* Clone a repository */
+int clone_repo( const char *repo_url, const char *local_path );
+
+
+/* Pull changes from a repository */
+int pull_repo( const char *local_path );

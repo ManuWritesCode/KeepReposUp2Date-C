@@ -101,7 +101,7 @@ void *thread_clone_or_pull_repo( void *arg )
     if ( directory_exists( local_path ) ) {
         fprintf( stdout, "Pulling into: %s from %s...\n", local_path, repos->urls[index] );
         
-        if ( pull_repo() != 0 ) {
+        if ( pull_repo( local_path, conf ) != 0 ) {
             fprintf( stderr, "\tError while pulling %s from %s\n\n", repos->names[index], repos->urls[index] );
             pthread_exit( NULL );
         }else {

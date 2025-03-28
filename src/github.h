@@ -19,6 +19,7 @@
  *
  *************************************************************************************************************/
 
+#pragma once
 
 #include <errno.h>
 #include <stdio.h>
@@ -88,4 +89,4 @@ int clone_repo( const char *repo_url, const char *local_path, const kru2d_conf *
 /*
  * Pull a repository
  */
-int pull_repo();
+int pull_repo( const char *local_path, const kru2d_conf *conf );

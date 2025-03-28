@@ -19,9 +19,7 @@
  *
  *************************************************************************************************************/
 
-
-#include "kru2d.h"
-
+#include "github.h"
 
 void handle_sigint( int sig ) 
 {
@@ -97,9 +95,7 @@ void *thread_clone_or_pull_repo( void *arg )
     char local_path[512];
     snprintf( local_path, sizeof( local_path ), "%s/%s", conf->dev_path, repos->names[index] );
 
-    ////////////////// FOR DEBUG ///////////////////////
-    fprintf( stdout, "Thread processing repo: %s\n", repos->names[index] );
-    ////////////////////////////////////////////////////
+    
 
     // If a local directory exists, pulling it, else cloning from Github
     if ( directory_exists( local_path ) ) {
@@ -114,12 +110,13 @@ void *thread_clone_or_pull_repo( void *arg )
     } else {
         fprintf( stdout, "Cloning into: %s from %s...\n", local_path, repos->urls[index] );
 
-        if ( clone_repo( repos->urls[index], local_path, conf->ssh_private_key, conf->ssh_public_key, conf->ssh_passphrase ) != 0 ) {
+        if ( clone_repo( repos->urls[index], local_path, conf ) != 0 ) {
             fprintf( stderr, "\tError while cloning %s from %s\n\n", repos->names[index], repos->urls[index] );
             pthread_exit( NULL );
         } else {
             fprintf( stdout, "\tRepository %s cloned successfully from %s\n\n", repos->names[index], repos->urls[index] );
         }
+        
     }
 
    return NULL;

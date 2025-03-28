@@ -20,6 +20,7 @@
  *************************************************************************************************************/
 
 #include "github.h"
+#include "kru2d.h"
 
 
 
@@ -191,8 +192,42 @@ struct repo_names fetch_github_repos( const char *github_token )
     return repos;
 }
 
-int clone_repo( const char *repo_url, const char *local_path, const char *ssh_private_key, const char *ssh_public_key, const char *ssh_passphrase )
+int credentials_callback( git_cred **cred, const char *url, const char *username_from_url,
+    unsigned int allowed_types, void *payload )
 {
+    kru2d_conf *conf = ( kru2d_conf * )payload;
+
+    return git_cred_ssh_key_new( cred, username_from_url ? username_from_url : "git",
+           conf->ssh_public_key, conf->ssh_private_key, conf->ssh_passphrase );
+}
+
+int clone_repo( const char *repo_url, const char *local_path, const kru2d_conf *conf )
+{   
+    const char *url = repo_url;
+    const char *local = local_path;
+    git_repository *git_repo = NULL;
+    git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
+    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+
+
+    // Configures the SSH authentication callback
+    callbacks.credentials = credentials_callback;
+    callbacks.payload = ( kru2d_conf * )conf;
+    clone_opts.fetch_opts.callbacks = callbacks;
+
+    git_libgit2_init();
+
+    if ( git_clone( &git_repo, repo_url, local, &clone_opts ) != 0 ) {
+        const git_error *e = git_error_last();
+        fprintf( stderr, "\tError while cloning %s: %s\n\n", url, 
+                e && e->message ? e->message : "Unknown error" );
+        return -1;
+    }
+
+    if ( git_repo ) {
+        git_repository_free( git_repo );
+    }
+    
     return 0;
 }
 

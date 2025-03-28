@@ -20,13 +20,15 @@
  *************************************************************************************************************/
 
 
- #include <errno.h>
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
- #include <unistd.h>
- #include <curl/curl.h>
- #include <json-c/json.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <curl/curl.h>
+#include <json-c/json.h>
+#include <git2.h>
+#include "kru2d.h"
 
  
  /* 
@@ -72,10 +74,16 @@ void free_repo_names( struct repo_names *repos );
  */
 struct repo_names fetch_github_repos( const char *github_token );
 
+/*
+ * Callback for SSH authentication
+ */
+int credentials_callback( git_cred **cred, const char *url, const char *username_from_url,
+    unsigned int allowed_types, void *payload );
+
 /* 
  * Clone a repository 
  */
-int clone_repo( const char *repo_url, const char *local_path, const char *ssh_private_key, const char *ssh_public_key, const char *ssh_passphrase );
+int clone_repo( const char *repo_url, const char *local_path, const kru2d_conf *conf );
 
 /*
  * Pull a repository

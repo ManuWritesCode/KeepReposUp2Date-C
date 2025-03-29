@@ -453,6 +453,15 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
         }
 
         git_commit *parent_commit = NULL;
+        if ( git_commit_lookup( &parent_commit, repo, git_annotated_commit_id( fetch_head_commit ) ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to lookup FETCH_HEAD commit : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_commit_free( head_commit );
+            git_tree_free( tree );
+            git_signature_free( signature );
+            git_index_free( index );
+            goto cleanup;
+        }
 
         const git_commit *parent_commits[] = { head_commit, parent_commit };
         if ( git_commit_create( &commit_oid, repo, "HEAD", signature, signature, NULL,

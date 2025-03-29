@@ -465,7 +465,7 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
 
         const git_commit *parent_commits[] = { head_commit, parent_commit };
         if ( git_commit_create( &commit_oid, repo, "HEAD", signature, signature, NULL,
-                                    "Merge commit", tree, 1, parent_commits ) != 0 ) {
+                                    "Merge commit", tree, 2, parent_commits ) != 0 ) {
             e = git_error_last();
             fprintf( stderr, "Failed to create merge commit : %s\n", e && e->message ? e->message : "Unknon error" );
             git_reference_free( head_ref );
@@ -480,6 +480,8 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
             e = git_error_last();
             fprintf( stderr, "Failed to clean up repository state : %s\n", e && e->message ? e->message : "Unknown error" );
             goto cleanup;
+        } else {
+            fprintf( stdout, "State cleaned up OK\n" );
         }
 
         

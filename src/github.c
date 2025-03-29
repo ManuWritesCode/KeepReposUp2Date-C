@@ -488,6 +488,9 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
         git_tree_free( tree );
         git_signature_free( signature );
         git_index_free( index );
+    } else {
+        fprintf( stdout, "NOT in MERGE state. No commit willbe created.\n" );
+        goto cleanup;
     }
 
     result = 0;

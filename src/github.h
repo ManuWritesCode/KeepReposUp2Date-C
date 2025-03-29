@@ -87,6 +87,11 @@ int credentials_callback( git_cred **cred, const char *url, const char *username
 int clone_repo( const char *repo_url, const char *local_path, const kru2d_conf *conf );
 
 /*
+ * Verify if a pull is needed
+ */
+int pull_is_needed( const char *local_path, const kru2d_conf *conf );
+
+/*
  * Pull a repository
  */
 int pull_repo( const char *local_path, const kru2d_conf *conf );

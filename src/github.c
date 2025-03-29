@@ -235,188 +235,82 @@ int clone_repo( const char *repo_url, const char *local_path, const kru2d_conf *
     return 0;
 }
 
-int pull_repo( const char *local_path, const kru2d_conf *conf )
+
+int pull_is_needed( const char *local_path, const kru2d_conf *conf )
 {
-    const char *local = local_path;
+    int result = 1; // By default, a pull is needed
 
     git_repository *repo = NULL;
     git_remote *remote = NULL;
-    git_reference *fetch_head = NULL;
-    git_annotated_commit *fetch_head_commit = NULL;
-    git_merge_options merge_opts = GIT_MERGE_OPTIONS_INIT;
-    git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
-
+    git_oid local_head_oid, remote_head_oid;
+    const git_remote_head **remote_heads;
+    size_t remote_heads_count = 0;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+
     // Configures the SSH authentication callback
     callbacks.credentials = credentials_callback;
     callbacks.payload = ( kru2d_conf * )conf;
-    
-    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
-    fetch_opts.callbacks = callbacks;
 
-    merge_opts.flags = GIT_MERGE_FIND_RENAMES;
-    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+    const git_error *e;
 
 
-    // Initialize libgit2
-    if ( git_libgit2_init() < 0 ) {
-        fprintf( stderr, "Failed to initialize libgit2\n" );
+    // Open the local repository
+    if ( git_repository_open( &repo, local_path ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Error opening local repository %s : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
         return -1;
     }
 
-    // Open local repository
-    if ( git_repository_open( &repo, local_path ) != 0 ) {
-        fprintf( stderr, "Failed to open local repository at %s\n", local_path );
-        goto cleanup;
+    // Get local HEAD OID
+    if ( git_reference_name_to_id( &local_head_oid, repo, "HEAD" ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to get local HEAD OID for %s : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        return -1;
     }
 
-    // Get the remote 'origin'
+    // Get remote 'origin'
     if ( git_remote_lookup( &remote, repo, "origin" ) != 0 ) {
-        fprintf( stderr, "Failed to find remote 'origin'\n" );
-        goto cleanup;
+        e = git_error_last();
+        fprintf( stderr, "Failed to find remote 'origin' for %s : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        return -1;
     }
 
-    // Fetch changes from the remote
-    if ( git_remote_fetch( remote, NULL, &fetch_opts, NULL ) != 0 ) {
-        fprintf( stderr, "Failed to fetch from remote 'origin'\n" );
-        goto cleanup;
+    // Connect to remote and get references
+    if ( git_remote_connect( remote, GIT_DIRECTION_FETCH, &callbacks, NULL, NULL ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to connect to remote 'origin' : %s\n", e && e->message ? e->message : "Unknown error" );
+        return -1;
     }
 
-    // Get FETCH_HEAD reference
-    if ( git_reference_lookup( &fetch_head, repo, "FETCH_HEAD" ) != 0 ) {
-        fprintf( stderr, "Failed to lookup FETCH_HEAD\n" );
-        goto cleanup;
+    if ( git_remote_ls( &remote_heads, &remote_heads_count, remote ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to list references from %s : %s\n\t%s\n", git_remote_name( remote ), git_remote_url( remote ), e && e->message ? e->message : "Unknown error" );
+        return -1;
+    }
+    
+    // Get remote HEAD OID ( refs/heads/main or refs/heads/master )
+    for ( size_t i = 0; i < remote_heads_count; i++ ) {
+        if ( strcmp( remote_heads[i]->name, "refs/heads/main" ) || strcmp( remote_heads[i]->name, "refs/heads/master" ) == 0 ) {
+            git_oid_cpy( &remote_head_oid, &remote_heads[i]->oid );
+            break;
+        }
+    } 
+
+    // Compare OIDs of local and remote HEAD
+    if ( git_oid_cmp( &local_head_oid, &remote_head_oid ) == 0 ) {
+        return 0;
     }
 
-    // Create an annotated commit from FETCH_HEAD
-    if ( git_annotated_commit_from_ref( & fetch_head_commit, repo, fetch_head ) != 0 ) {
-        fprintf( stderr, "Failed to create annotated commit from FETCH_HEAD\n" );
-        goto cleanup;
-    }
+    git_remote_free( remote );
+    git_repository_free( repo );
 
-    // Merge FETCH_HEAD into the current branch
-    if ( git_merge( repo, ( const git_annotated_commit ** )&fetch_head_commit, 1, &merge_opts, &checkout_opts ) != 0 ) {
-        fprintf( stderr, "Failed to merge FETCH_HEAD into current branch\n" );
-        goto cleanup;
-    }
+    return result;
+}
 
 
-
-    // Check if a commit is required to finalize the merge
-    if ( git_repository_state( repo ) == GIT_REPOSITORY_STATE_MERGE ) {
-        fprintf( stdout, "Finalizing merge with a commit...\n" );
-
-        git_index *index = NULL;
-        if ( git_repository_index( &index, repo ) != 0 ) {
-            fprintf( stderr, "Failed to get repository index\n" );
-            goto cleanup;
-        }
-
-        // Check for conflicts
-        if ( git_index_has_conflicts( index ) ) {
-            fprintf( stderr, "Merge conflicts detected. Resolve conflicts before committing.\n" );
-            git_index_free( index );
-            goto cleanup;
-        }
-
-        // Create a merge commit
-        git_signature *signature = NULL;
-        if ( git_signature_now( &signature, "Your Name", "your.email@example.com" ) != 0 ) {
-            fprintf( stderr, "Failed to create signature\n" );
-            git_index_free( index );
-            goto cleanup;
-        }
-
-        git_oid tree_oid, commit_oid;
-        git_tree *tree = NULL;
-
-        if ( git_index_write_tree( &tree_oid, index ) != 0 ) {
-            fprintf( stderr, "Failed to write tree\n" );
-            git_signature_free( signature );
-            git_index_free( index );
-            goto cleanup;
-        }
-
-        if ( git_tree_lookup( &tree, repo, &tree_oid ) != 0 ) {
-            fprintf( stderr, " Failed to lookup tree\n" );
-            git_signature_free( signature );
-            git_index_free( index );
-            goto cleanup;
-        }
-
-        git_reference *head_ref = NULL;
-        if ( git_repository_head( &head_ref, repo ) != 0 ) {
-            fprintf( stderr, "Failed to get HEAD reference\n" );
-            git_tree_free( tree );
-            git_signature_free( signature );
-            git_index_free( index );
-            goto cleanup;
-        }
-
-        const git_commit *parent_commit = NULL;
-        if (git_commit_lookup( &parent_commit, repo, git_annotated_commit_id( fetch_head_commit ) ) != 0) {
-            fprintf( stderr, "Failed to lookup parent commit\n" );
-            git_reference_free( head_ref );
-            git_tree_free( tree );
-            git_signature_free( signature );
-            git_index_free( index );
-            goto cleanup;
-        }
-        
-        const git_commit *parent_commits[] = { parent_commit };
-
-
-
-
-        // Debugging: Log parent commit ID
-        char parent_commit_id[GIT_OID_HEXSZ + 1];
-        git_oid_tostr(parent_commit_id, sizeof(parent_commit_id), git_commit_id(parent_commit));
-        fprintf(stdout, "Parent commit ID: %s\n", parent_commit_id);
-        // END DEBUGGING
-
-
-
-        
-        if ( git_commit_create( &commit_oid, repo, "HEAD", signature, signature, NULL, 
-                                "Merge commit", tree, 1, parent_commits ) != 0 ) {
-            const git_error *e = git_error_last();
-            fprintf( stderr, "Failed to create merge commit: %s\n", e && e->message ? e->message : "Unknown error" );
-            git_reference_free( head_ref );
-            git_tree_free( tree );
-            git_signature_free( signature );
-            git_index_free( index );
-            git_commit_free( parent_commit );
-
-            goto cleanup;
-        }
-
-        git_commit_free( parent_commit );
-
-        // Clean fusion state
-        if ( git_repository_state_cleanup( repo ) != 0 ) {
-            fprintf( stderr, "Failed to clean up repository state\n" );
-            goto cleanup;
-        }
-
-        fprintf( stdout, "Merge commit created successfully\n" );
-
-        git_reference_free(head_ref);
-        git_tree_free(tree);
-        git_signature_free(signature);
-        git_index_free(index);
-    }
-
-
-    fprintf ( stdout, "Successfully pulled changes into repository at %s\n", local_path );
-
-
-cleanup:
-    if ( fetch_head_commit ) git_annotated_commit_free( fetch_head_commit );
-    if ( fetch_head ) git_reference_free( fetch_head );
-    if ( remote ) git_remote_free( remote );
-    if ( repo ) git_repository_free( repo );
-
-    git_libgit2_shutdown();
-
+int pull_repo( const char *local_path, const kru2d_conf *conf )
+{
+  
+    
     return 0;
 }

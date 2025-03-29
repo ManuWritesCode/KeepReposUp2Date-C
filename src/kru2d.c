@@ -95,17 +95,32 @@ void *thread_clone_or_pull_repo( void *arg )
     char local_path[512];
     snprintf( local_path, sizeof( local_path ), "%s/%s", conf->dev_path, repos->names[index] );
 
-    
+    // Initialize libgit2
+    if ( git_libgit2_init() < 0 ) {
+        fprintf( stderr, "Failed to initialize libgit2\n" );
+        return NULL;
+    }    
 
     // If a local directory exists, pulling it, else cloning from Github
     if ( directory_exists( local_path ) ) {
-        fprintf( stdout, "Pulling into: %s from %s...\n", local_path, repos->urls[index] );
+
+        // Verify is the repository must be updated
+        int need_pull = pull_is_needed( local_path, conf );
+
+        if ( need_pull < 0 ) {
+            fprintf( stderr, "Error while checking if pull is needed\n" );
+            pthread_exit ( NULL );
+        } else if ( need_pull != 0 ) {
+            fprintf( stdout, "Pulling into: %s from %s...\n", local_path, repos->urls[index] );
         
-        if ( pull_repo( local_path, conf ) != 0 ) {
-            fprintf( stderr, "\tError while pulling %s from %s\n\n", repos->names[index], repos->urls[index] );
-            pthread_exit( NULL );
-        }else {
-            fprintf( stdout, "\tRepository %s pulled successfully from %s\n\n", repos->names[index], repos->urls[index] );
+            if ( pull_repo( local_path, conf ) != 0 ) {
+                fprintf( stderr, "\tError while pulling %s from %s\n\n", repos->names[index], repos->urls[index] );
+                pthread_exit( NULL );
+            }else {
+                fprintf( stdout, "\tRepository %s pulled successfully from %s\n\n", repos->names[index], repos->urls[index] );
+            }
+        } else {
+            fprintf( stdout, "Local repository %s already up to date\n", local_path );
         }
     } else {
         fprintf( stdout, "Cloning into: %s from %s...\n", local_path, repos->urls[index] );
@@ -119,5 +134,7 @@ void *thread_clone_or_pull_repo( void *arg )
         
     }
 
-   return NULL;
+    git_libgit2_shutdown();
+
+    return NULL;
 }

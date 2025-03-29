@@ -310,7 +310,184 @@ int pull_is_needed( const char *local_path, const kru2d_conf *conf )
 
 int pull_repo( const char *local_path, const kru2d_conf *conf )
 {
-  
-    
-    return 0;
+    git_repository *repo = NULL;
+    git_remote *remote = NULL;
+    git_reference *fetch_head = NULL;
+    git_annotated_commit *fetch_head_commit = NULL;
+
+    git_merge_options merge_opts = GIT_MERGE_OPTIONS_INIT;
+    merge_opts.flags = GIT_MERGE_FIND_RENAMES;
+
+    git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+
+    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+    callbacks.credentials = credentials_callback;
+    callbacks.payload = ( void * )conf;
+
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    fetch_opts.callbacks = callbacks;
+
+    const git_error *e;
+
+    int result = -1; // By defaut, failed
+
+    // Open local repository
+    if ( git_repository_open( &repo, local_path ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to open local repository %s : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
+
+    // Get remote 'origin'
+    if ( git_remote_lookup( &remote, repo, "origin" ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to find remote 'origin' of %s : %s\n" , local_path, e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
+
+    // Fetch modifications from remote
+    if ( git_remote_fetch( remote, NULL, &fetch_opts, NULL ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to fetch from %s remote 'origin' : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
+
+    // Get FETCH_HEAD reference
+    if ( git_reference_lookup( &fetch_head, repo, "FETCH_HEAD" ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to lookup FETCH_HEAD of %s : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
+
+    // Create a annotated commit from FETCH_HEAD
+    if ( git_annotated_commit_from_ref( &fetch_head_commit, repo, fetch_head ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to create annotated commit from FETCH_HEAD of %s : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
+
+    // Merge FETCH_HEAD in the local branch
+    if ( git_merge( repo, ( const git_annotated_commit ** )&fetch_head_commit, 1, &merge_opts, &checkout_opts ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to merge FETCH_HEAD of %s into the current branch : %s\n", local_path, e && e->message ? e->message : "Unknown error" );
+        goto cleanup;
+    }
+
+    // Verify if a commit is needed to end merging
+    if ( git_repository_state( repo ) == GIT_REPOSITORY_STATE_MERGE ) {
+        fprintf( stdout, "\tFinalizing merge with a commit...\n" );
+
+        git_index *index = NULL;
+        if ( git_repository_index( &index, repo ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to get repository index : %s\n", e && e->message ? e->message : "Unknown error" );
+            goto cleanup;
+        }
+
+        // Check conflicts
+        if ( git_index_has_conflicts( index ) ) {
+            fprintf( stderr, "Merge conflicts detected. Resolve them before committing.\n" );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        // Create a merge commit
+        git_signature *signature = NULL;
+        if ( git_signature_default( &signature, repo ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, " Failed to create default signature : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        git_oid tree_oid, commit_oid;
+        git_tree *tree = NULL;
+
+        if ( git_index_write_tree( &tree_oid, index ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to write tree : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_signature_free( signature );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        if ( git_tree_lookup( &tree, repo, &tree_oid ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to lookup tree : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_signature_free( signature );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        git_reference *head_ref = NULL;
+        if ( git_repository_head( &head_ref, repo ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to get HEAD reference : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_tree_free( tree );
+            git_signature_free( signature );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        git_oid head_oid;
+        git_commit *head_commit = NULL;
+
+        // Get the current branch's HEAD commit
+        if ( git_reference_name_to_id( &head_oid, repo, "HEAD" ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to get HEAD OID : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_tree_free( tree );
+            git_signature_free( signature );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        if ( git_commit_lookup( &head_commit, repo, &head_oid ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to lookup HEAD commit : %s\n", e && e->message ? e->message : "Unknown error" );
+            git_tree_free( tree );
+            git_signature_free( signature );
+            git_index_free( index );
+            goto cleanup;
+        }
+
+        git_commit *parent_commit = NULL;
+
+        const git_commit *parent_commits[] = { head_commit, parent_commit };
+        if ( git_commit_create( &commit_oid, repo, "HEAD", signature, signature, NULL,
+                                    "Merge commit", tree, 1, parent_commits ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to create merge commit : %s\n", e && e->message ? e->message : "Unknon error" );
+            git_reference_free( head_ref );
+            git_tree_free( tree );
+            git_signature_free( signature );
+            git_index_free( index );
+            git_commit_free( parent_commit );
+            goto cleanup;
+        }
+
+        if ( git_repository_state_cleanup( repo ) != 0 ) {
+            e = git_error_last();
+            fprintf( stderr, "Failed to clean up repository state : %s\n", e && e->message ? e->message : "Unknown error" );
+            goto cleanup;
+        }
+
+        
+        git_commit_free ( parent_commit );
+        git_reference_free( head_ref );
+        git_tree_free( tree );
+        git_signature_free( signature );
+        git_index_free( index );
+    }
+
+    result = 0;
+
+cleanup:
+    if (fetch_head_commit) git_annotated_commit_free(fetch_head_commit);
+    if (fetch_head) git_reference_free(fetch_head);
+    if (remote) git_remote_free(remote);
+    if (repo) git_repository_free(repo);
+
+    return result;
 }

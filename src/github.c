@@ -480,8 +480,6 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
             e = git_error_last();
             fprintf( stderr, "Failed to clean up repository state : %s\n", e && e->message ? e->message : "Unknown error" );
             goto cleanup;
-        } else {
-            fprintf( stdout, "State cleaned up OK\n" );
         }
 
         
@@ -490,8 +488,15 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
         git_tree_free( tree );
         git_signature_free( signature );
         git_index_free( index );
-    } else {
-        fprintf( stdout, "NOT in MERGE state. No commit willbe created.\n" );
+    }
+
+    // Push the local changes to the remote repository
+    git_push_options push_opts = GIT_PUSH_OPTIONS_INIT;
+    push_opts.callbacks = callbacks;
+
+    if ( git_remote_push( remote, NULL, &push_opts ) != 0 ) {
+        e = git_error_last();
+        fprintf( stderr, "Failed to push changes to remote 'origin' : %s\n", e && e->message ? e->message : "Unknown error" );
         goto cleanup;
     }
 

@@ -495,7 +495,13 @@ int pull_repo( const char *local_path, const kru2d_conf *conf )
     push_opts.callbacks = callbacks;
 
     const char *refspecs[] = { "refs/heads/main", "refs/heads/master" };
-    if ( git_remote_push( remote, refspecs, &push_opts ) != 0 ) {
+
+    git_strarray refspec_array = {
+        .strings = ( char ** )refspecs,
+        .count = 1
+    };
+
+    if ( git_remote_push( remote, &refspec_array, &push_opts ) != 0 ) {
         e = git_error_last();
         fprintf( stderr, "Failed to push changes to remote 'origin' : %s\n", e && e->message ? e->message : "Unknown error" );
         goto cleanup;

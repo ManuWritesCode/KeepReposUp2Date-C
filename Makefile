@@ -19,7 +19,7 @@ kru2d: build_dir build/main.o build/kru2d.o build/github.o
 
 build/github.o: src/github.c
 	$(CC) -c src/github.c -o build/github.o $(CFLAGS)
-	
+
 build/kru2d.o: src/kru2d.c
 	$(CC) -c src/kru2d.c -o build/kru2d.o $(CFLAGS)
 
@@ -28,3 +28,15 @@ build/main.o: src/main.c
 
 build_dir:
 	mkdir -p build
+
+
+
+install: kru2d
+# Create the configuration directory if it does not exist
+	mkdir -p ~/.config/KeepReposUp2Date
+# Copy the configuration file 
+	cp kru2d-example.conf ~/.config/KeepReposUp2Date/kru2d.conf
+# Create the installation directory if it does not exist
+	sudo mkdir -p /opt/KeepReposUp2Date
+# Copy the binary to the installation directory
+	sudo cp build/kru2d /opt/KeepReposUp2Date/kru2d

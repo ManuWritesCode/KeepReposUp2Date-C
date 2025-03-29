@@ -89,7 +89,22 @@ SSH_PASSPHRASE=your_SSH_key_passphrase
 
 by replacing _path/of/your/main/development/directory_ with the path containing all your development projects, _Your_Github_token_to_access_your_Github_account_ by your Github token, _your_github_username_ by your Github username, _path/of/your/SSH/private/key_ by the path where your private SSH keys are stored (in general : _~/.ssh/<key_file>_), _path/of/your/SSH/public/key_ by the path where your public SSH keys are stored (in general : _~/.ssh/<key_file>.pub_), and _your_SSH_key_passphrase_ by the passphrase you defined when you have created your SSH keys.
 
-## Run the binary automatically
+
+## Run the binary
+
+### On Debian GNU/Linux
+
+The previous command `make install` has installed the binary into /opt/KeepReposUp2Date folder. To run it, run the command :
+
+```bash
+/opt/KeepReposUp2Date/kru2d
+```
+
+This will clone all your non-existing repositories and pull all existing repositories.
+
+
+
+## [FUTURE WORK] Run the binary automatically
 
 ### On Debian GNU/Linux
 

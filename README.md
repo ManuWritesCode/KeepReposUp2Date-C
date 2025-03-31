@@ -36,7 +36,7 @@ brew install curl json-c libgit2
 sudo apt update
 sudo apt install curl libcurl4-openssl-dev libjson-c-dev libgit2-dev
 ```
-You need too a Github token too to let this programm accessing to your Github account. If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+You need a Github token too to let this programm accessing to your Github account. If you do not know what a Github token is, please refer to this link : [Managing your personnal access tokens](https://docs.github.com/fr/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
 ### Building
 
@@ -104,11 +104,11 @@ This will clone all your non-existing repositories and pull all existing reposit
 
 
 
-## [FUTURE WORK] Run the binary automatically
+## Run the binary automatically
 
 ### On Debian GNU/Linux
 
-To run the binary automatically at each session start, the `make install` command creates a systemd service containing :
+To run the binary automatically at each session start, you can create a _systemd service_ containing :
 
 ```ini
 [Unit]
@@ -117,7 +117,7 @@ After=default.target
 
 [Service]
 ExecStart=/opt/KeepReposUp2Date/kru2d
-Environment=HOME=/home/manu
+Environment=HOME=/home/<your_username>
 Restart=on-failure
 RestartSec=5s
 StartLimitInterval=30s
@@ -136,7 +136,7 @@ sudo systemctl start kru2d.service
 
 ### On MacOS
 
-For MacOS, a launchd agent is created :
+For MacOS, a launchd agent can be created :
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
